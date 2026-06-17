@@ -15,6 +15,7 @@ export default function SalonMatchPage() {
   const [data, setData] = useState<SalonMatchInput>({ occasion: '', hairType: '', skinType: '', budget: '', area: '' });
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<SalonMatchResult[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const steps = [
     { title: 'What is the occasion?', key: 'occasion', options: OCCASIONS },
@@ -36,11 +37,17 @@ export default function SalonMatchPage() {
 
   const submitQuiz = async (finalData: SalonMatchInput) => {
     setLoading(true);
+    setError(null);
     try {
       const res = await api.post('/ai/salon-match', finalData);
       setResults(res.data.results);
-    } catch (err) {
-      alert('Failed to get AI recommendations.');
+    } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 429) {
+        setError('AI is experiencing high demand right now. Please wait a moment and try again.');
+      } else {
+        setError('Could not get AI recommendations. Please try again.');
+      }
       setStep(0);
     } finally {
       setLoading(false);
@@ -115,11 +122,23 @@ export default function SalonMatchPage() {
               <Sparkles className="w-8 h-8 text-rose animate-spin" style={{ animationDuration: '3s' }} />
             </div>
             <h2 className="text-2xl font-bold font-display mb-2">Finding your perfect match...</h2>
-            <p className="text-gray-500">Claude AI is analyzing salons across Chennai based on your profile.</p>
+            <p className="text-gray-500">Gemini AI is analyzing salons across Chennai based on your profile.</p>
           </div>
         ) : (
           <div className="card p-8 bg-white relative overflow-hidden animate-slide-up">
             <div className="absolute top-0 left-0 h-1 bg-gold transition-all duration-500" style={{ width: `${(step / steps.length) * 100}%` }} />
+
+            {/* Inline error banner */}
+            {error && (
+              <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-3">
+                <span className="text-rose-500 text-lg">⚠️</span>
+                <div>
+                  <p className="text-sm font-semibold text-rose-800">Couldn't get recommendations</p>
+                  <p className="text-xs text-rose-600 mt-0.5">{error}</p>
+                </div>
+                <button onClick={() => setError(null)} className="ml-auto text-rose-400 hover:text-rose-600 text-lg leading-none">×</button>
+              </div>
+            )}
             
             <div className="flex items-center gap-2 text-sm font-medium text-gold mb-8">
               {step > 0 && <button onClick={() => setStep(step-1)} className="hover:underline flex items-center"><ChevronLeft className="w-4 h-4"/> Back</button>}

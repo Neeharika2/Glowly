@@ -31,8 +31,15 @@ export default function ConciergePage() {
     try {
       const res = await api.post('/ai/concierge', { messages: newMsgs });
       setMessages([...newMsgs, { role: 'assistant', content: res.data.reply }]);
-    } catch (err) {
-      setMessages([...newMsgs, { role: 'assistant', content: "I'm sorry, I'm having trouble connecting to my database right now. Please try again later." }]);
+    } catch (err: any) {
+      const status = err?.response?.status;
+      let errorMsg = "I'm sorry, I ran into an issue. Please try again in a moment.";
+      if (status === 429) {
+        errorMsg = "I'm currently experiencing high demand. Please wait a moment and try again! ✨";
+      } else if (status === 500) {
+        errorMsg = "I'm having a temporary hiccup on my end. Please try again shortly.";
+      }
+      setMessages([...newMsgs, { role: 'assistant', content: errorMsg }]);
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import anthropic from '../lib/claude';
+import { gemini } from '../lib/gemini';
 import prisma from '../lib/prisma';
 
 const router = Router();
@@ -18,6 +18,27 @@ async function getSalonContext(): Promise<string> {
 }
 
 // ─────────────────────────────────────────────────────────
+// Helper: parse JSON safely from Gemini response text
+// (Gemini sometimes wraps JSON in ```json ... ``` fences)
+// ─────────────────────────────────────────────────────────
+function extractJSON(text: string): string {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenced) return fenced[1].trim();
+  return text.trim();
+}
+
+// Forward Gemini 429 rate-limit errors back to the client
+function handleAIError(err: unknown, label: string, res: import('express').Response) {
+  console.error(`${label} error:`, err);
+  const status = (err as any)?.status;
+  if (status === 429) {
+    res.status(429).json({ error: 'Rate limit reached. Please try again in a moment.' });
+  } else {
+    res.status(500).json({ error: 'AI service error' });
+  }
+}
+
+// ─────────────────────────────────────────────────────────
 // POST /api/ai/concierge — Beauty Concierge Chat
 // ─────────────────────────────────────────────────────────
 router.post('/concierge', async (req: Request, res: Response) => {
@@ -25,7 +46,7 @@ router.post('/concierge', async (req: Request, res: Response) => {
     const { messages } = req.body; // [{role, content}]
     const salonContext = await getSalonContext();
 
-    const systemPrompt = `You are Glow, a luxury AI beauty concierge for Chennai BeautyHub — a premium beauty salon discovery platform in Chennai, Tamil Nadu.
+    const systemInstruction = `You are Glow, a luxury AI beauty concierge for Glowly — a premium beauty salon discovery platform in Chennai, Tamil Nadu.
 
 Your role:
 - Help users find the perfect salon based on their needs, budget, occasion, and location in Chennai
@@ -43,23 +64,22 @@ Guidelines:
 - If asked about something outside beauty/salons, gently redirect
 - Prices are in Indian Rupees (₹)`;
 
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-5',
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages: messages.map((m: { role: string; content: string }) => ({
-        role: m.role,
-        content: m.content,
-      })),
-    });
+    // Build full prompt: system instruction + chat history + user message
+    const historyText = messages
+      .slice(0, -1)
+      .map((m: { role: string; content: string }) => `${m.role === 'user' ? 'User' : 'Glow'}: ${m.content}`)
+      .join('\n');
 
-    const content = response.content[0];
-    if (content.type !== 'text') throw new Error('Unexpected response type');
+    const lastMessage = messages[messages.length - 1];
 
-    res.json({ reply: content.text });
+    const fullPrompt = `${systemInstruction}\n\n${historyText ? 'Conversation so far:\n' + historyText + '\n\n' : ''}User: ${lastMessage.content}\nGlow:`;
+
+    const result = await gemini.generateContent(fullPrompt);
+    const reply = result.response.text().trim();
+
+    res.json({ reply });
   } catch (err) {
-    console.error('Concierge error:', err);
-    res.status(500).json({ error: 'AI service error' });
+    handleAIError(err, 'Concierge', res);
   }
 });
 
@@ -97,16 +117,10 @@ Based on this profile, return the top 3 matching salons as a JSON array. Each ob
 
 Return ONLY the JSON array, no other text.`;
 
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-5',
-      max_tokens: 1024,
-      messages: [{ role: 'user', content: prompt }],
-    });
+    const result = await gemini.generateContent(prompt);
+    const text = extractJSON(result.response.text());
+    const matches = JSON.parse(text);
 
-    const content = response.content[0];
-    if (content.type !== 'text') throw new Error('Unexpected response type');
-
-    const matches = JSON.parse(content.text);
     const results = await Promise.all(
       matches.map(async (m: { salonId: number; matchScore: number; reason: string; recommendedServices: string[] }) => {
         const salon = await prisma.salon.findUnique({
@@ -119,8 +133,7 @@ Return ONLY the JSON array, no other text.`;
 
     res.json({ results });
   } catch (err) {
-    console.error('Salon match error:', err);
-    res.status(500).json({ error: 'AI service error' });
+    handleAIError(err, 'Salon match', res);
   }
 });
 
@@ -155,20 +168,12 @@ Return ONLY this JSON structure, no other text:
   "score": 4.5
 }`;
 
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-5',
-      max_tokens: 512,
-      messages: [{ role: 'user', content: prompt }],
-    });
-
-    const content = response.content[0];
-    if (content.type !== 'text') throw new Error('Unexpected response type');
-
-    const summary = JSON.parse(content.text);
+    const result = await gemini.generateContent(prompt);
+    const text = extractJSON(result.response.text());
+    const summary = JSON.parse(text);
     res.json(summary);
   } catch (err) {
-    console.error('Review summary error:', err);
-    res.status(500).json({ error: 'AI service error' });
+    handleAIError(err, 'Review summary', res);
   }
 });
 
@@ -192,16 +197,9 @@ Extract structured search filters from this query and return ONLY this JSON (use
   "keywords": "any remaining keywords" | null
 }`;
 
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-5',
-      max_tokens: 256,
-      messages: [{ role: 'user', content: prompt }],
-    });
-
-    const content = response.content[0];
-    if (content.type !== 'text') throw new Error('Unexpected response type');
-
-    const filters = JSON.parse(content.text);
+    const result = await gemini.generateContent(prompt);
+    const text = extractJSON(result.response.text());
+    const filters = JSON.parse(text);
 
     // Build Prisma where clause from filters
     const where: Record<string, unknown> = {};
@@ -227,8 +225,7 @@ Extract structured search filters from this query and return ONLY this JSON (use
 
     res.json({ salons, filters });
   } catch (err) {
-    console.error('AI search error:', err);
-    res.status(500).json({ error: 'AI service error' });
+    handleAIError(err, 'AI search', res);
   }
 });
 
@@ -237,25 +234,15 @@ Extract structured search filters from this query and return ONLY this JSON (use
 // ─────────────────────────────────────────────────────────
 router.get('/beauty-tip', async (_req: Request, res: Response) => {
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-5',
-      max_tokens: 150,
-      messages: [
-        {
-          role: 'user',
-          content:
-            'Give me one practical, expert beauty tip for today. Make it specific, useful, and relevant to Indian climate and beauty practices. Keep it to 2-3 sentences max. No intro or outro — just the tip.',
-        },
-      ],
-    });
+    const prompt =
+      'Give me one practical, expert beauty tip for today. Make it specific, useful, and relevant to Indian climate and beauty practices. Keep it to 2-3 sentences max. No intro or outro — just the tip.';
 
-    const content = response.content[0];
-    if (content.type !== 'text') throw new Error('Unexpected response type');
+    const result = await gemini.generateContent(prompt);
+    const tip = result.response.text().trim();
 
-    res.json({ tip: content.text });
+    res.json({ tip });
   } catch (err) {
-    console.error('Beauty tip error:', err);
-    res.status(500).json({ error: 'AI service error' });
+    handleAIError(err, 'Beauty tip', res);
   }
 });
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Star, MapPin, Clock, Phone, Sparkles, AlertCircle, Navigation } from 'lucide-react';
+import { Star, MapPin, Clock, Phone, Sparkles, AlertCircle } from 'lucide-react';
 import api from '../../lib/api';
 import { Salon, Review, ReviewSummary } from '../../types';
 import { useAuth } from '../../context/AuthContext';
@@ -120,7 +120,7 @@ export default function SalonDetailPage() {
                 </div>
                 <div>
                   <h3 className="font-bold text-dark font-display">AI Review Summary</h3>
-                  <p className="text-sm text-gray-600">Analyzed by Claude based on {reviews.length} reviews</p>
+                  <p className="text-sm text-gray-600">Analyzed by Gemini AI based on {reviews.length} reviews</p>
                 </div>
               </div>
               <div className="p-6 md:p-8">
@@ -199,33 +199,19 @@ export default function SalonDetailPage() {
         {/* Right Col */}
         <div className="space-y-6">
           <div className="card p-4 overflow-hidden sticky top-24">
-            <div className="rounded-xl overflow-hidden mb-4 border border-gray-100 bg-gray-50">
-              {salon.latitude && salon.longitude ? (
-                <iframe
-                  width="100%"
-                  height="250"
-                  style={{ border: 0 }}
-                  loading="lazy"
-                  allowFullScreen
-                  referrerPolicy="no-referrer-when-downgrade"
-                  src={`https://www.google.com/maps/embed/v1/place?key=${import.meta.env.VITE_GOOGLE_MAPS_KEY}&q=${salon.latitude},${salon.longitude}`}
-                ></iframe>
-              ) : (
-                <div className="h-[250px] flex items-center justify-center text-gray-400">
-                  <MapPin className="w-8 h-8 opacity-50" />
-                </div>
-              )}
+            {/* Location Info */}
+            <div className="rounded-xl bg-gray-50 border border-gray-100 p-5 mb-4">
+              <h3 className="font-semibold text-dark text-sm mb-3 flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-gold" /> Location
+              </h3>
+              <p className="text-sm text-gray-600">{salon.address}</p>
+              {salon.area && <p className="text-sm text-gray-500 mt-1">{salon.area}, Chennai</p>}
             </div>
-            <a href={`https://www.google.com/maps/search/?api=1&query=${salon.latitude},${salon.longitude}`}
-               target="_blank" rel="noreferrer"
-               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-gray-200 text-sm font-medium hover:bg-gray-50 transition-colors">
-              <Navigation className="w-4 h-4 text-gray-500" /> Open in Google Maps
-            </a>
-            
-            <div className="mt-4 p-4 rounded-xl bg-blue-50 flex gap-3 items-start">
+
+            <div className="p-4 rounded-xl bg-blue-50 flex gap-3 items-start">
               <AlertCircle className="w-5 h-5 text-blue-500 flex-shrink-0" />
               <p className="text-xs text-blue-800 leading-relaxed">
-                Some reviews and slots are AI-generated demo data for hackathon presentation purposes.
+                Some reviews and slots are AI-generated demo data for presentation purposes.
               </p>
             </div>
           </div>
