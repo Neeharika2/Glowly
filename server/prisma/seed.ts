@@ -1,283 +1,491 @@
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
+const fallbackImages = [
+  'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&q=80',
+  'https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=800&q=80',
+  'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&q=80',
+  'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=800&q=80',
+  'https://images.unsplash.com/photo-1600948836101-f9ffda59d250?w=800&q=80',
+  'https://images.unsplash.com/photo-1580618672591-eb180b1a973f?w=800&q=80',
+  'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=800&q=80',
+  'https://images.unsplash.com/photo-1633681122182-c3fcb02e6bce?w=800&q=80',
+  'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=800&q=80',
+  'https://images.unsplash.com/photo-1595476108010-b4d1f102b1b1?w=800&q=80',
+  'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800&q=80',
+  'https://images.unsplash.com/photo-1527799851257-6592aae86836?w=800&q=80'
+];
+
+function mapServiceNameToObject(name: string): { name: string; price: number; duration: number; category: string } {
+  const cleanName = name.toLowerCase().trim();
+  let price = 500;
+  let duration = 45;
+  let category = 'General';
+
+  if (cleanName.includes('haircut') || cleanName.includes('hair cut')) {
+    price = 400;
+    duration = 30;
+    category = 'Hair';
+  } else if (cleanName.includes('color') || cleanName.includes('colouring') || cleanName.includes('balayage') || cleanName.includes('highlight') || cleanName.includes('dying')) {
+    price = 2500;
+    duration = 90;
+    category = 'Hair';
+  } else if (cleanName.includes('spa')) {
+    price = 1200;
+    duration = 60;
+    category = 'Spa';
+  } else if (cleanName.includes('bridal') || cleanName.includes('makeup') || cleanName.includes('make up')) {
+    price = 8000;
+    duration = 180;
+    category = 'Bridal';
+  } else if (cleanName.includes('facial') || cleanName.includes('hydrafacial') || cleanName.includes('skin')) {
+    price = 1500;
+    duration = 60;
+    category = 'Skin';
+  } else if (cleanName.includes('manicure')) {
+    price = 600;
+    duration = 45;
+    category = 'Nails';
+  } else if (cleanName.includes('pedicure')) {
+    price = 700;
+    duration = 45;
+    category = 'Nails';
+  } else if (cleanName.includes('nail art') || cleanName.includes('nail extensions')) {
+    price = 800;
+    duration = 60;
+    category = 'Nails';
+  } else if (cleanName.includes('waxing')) {
+    price = 900;
+    duration = 45;
+    category = 'Skin';
+  } else if (cleanName.includes('threading')) {
+    price = 60;
+    duration = 10;
+    category = 'Beauty';
+  } else if (cleanName.includes('massage')) {
+    price = 2000;
+    duration = 60;
+    category = 'Spa';
+  } else if (cleanName.includes('keratin') || cleanName.includes('smoothening') || cleanName.includes('botox') || cleanName.includes('olaplex') || cleanName.includes('kerastase') || cleanName.includes('treatment')) {
+    price = 4500;
+    duration = 120;
+    category = 'Hair';
+  } else if (cleanName.includes('styling') || cleanName.includes('blow-dry') || cleanName.includes('blowdry')) {
+    price = 600;
+    duration = 30;
+    category = 'Hair';
+  } else if (cleanName.includes('grooming') || cleanName.includes('men')) {
+    price = 800;
+    duration = 45;
+    category = 'Grooming';
+  }
+
+  return {
+    name,
+    price,
+    duration,
+    category
+  };
+}
+
+const rawSalons = [
+  {
+    name: "Ornatrix Unisex Hair Studio",
+    description: "5-star rated unisex salon known for precision cuts, hair coloring & spa treatments.",
+    address: "Parthasarathy Nagar, Manapakkam, Chennai 600125",
+    area: "Manapakkam",
+    rating: 5.0,
+    latitude: "12.9921",
+    longitude: "80.1771",
+    priceRange: "₹300 - ₹3,000",
+    services: ["Haircuts", "Hair Coloring", "Highlights", "Hair Spa", "Men's Grooming"],
+    image: ""
+  },
+  {
+    name: "Naturals Signature Salon",
+    description: "Premium unisex chain with 3300+ reviews, luxury bridal & skincare services.",
+    address: "87, Arcot Road, Avm Nagar, Saligramam, Chennai 600093",
+    area: "Saligramam",
+    rating: 4.9,
+    latitude: "13.0513",
+    longitude: "80.1542",
+    priceRange: "₹350 - ₹8,000",
+    services: ["Bridal Makeup", "Hair Smoothening", "Keratin", "Facials", "Waxing", "Threading"],
+    image: ""
+  },
+  {
+    name: "Bounce Unisex Salon Ashoknagar",
+    description: "Trendy unisex salon popular for fashion hair coloring and modern styling.",
+    address: "Nelson Manickam Rd, Aminjikarai, Chennai 600029",
+    area: "Aminjikarai",
+    rating: 4.9,
+    latitude: "13.0538",
+    longitude: "80.2231",
+    priceRange: "₹400 - ₹4,000",
+    services: ["Fashion Hair Coloring", "Haircuts", "Styling", "Grooming Packages"],
+    image: ""
+  },
+  {
+    name: "VIBE Unisex Salon",
+    description: "Premium quality salon in T. Nagar at competitive pricing with 1500+ reviews.",
+    address: "Dhandapani Street, T. Nagar, Chennai 600017",
+    area: "T. Nagar",
+    rating: 4.9,
+    latitude: "13.0418",
+    longitude: "80.2342",
+    priceRange: "₹300 - ₹3,500",
+    services: ["Haircuts", "Hair Styling", "Facials", "Manicure", "Pedicure"],
+    image: ""
+  },
+  {
+    name: "Lakme Salon",
+    description: "Iconic salon chain by Lakme, leading bridal makeup destination in Chennai.",
+    address: "Somasundaram Street, T. Nagar, Chennai 600017",
+    area: "T. Nagar",
+    rating: 4.9,
+    latitude: "13.0405",
+    longitude: "80.2335",
+    priceRange: "₹500 - ₹10,000",
+    services: ["Bridal Makeup", "Hair Smoothening", "Skin Treatments", "Party Makeup", "Haircuts"],
+    image: ""
+  },
+  {
+    name: "Toni & Guy Hairdressing",
+    description: "London-trained stylists offering premium hairdressing and signature cutting techniques.",
+    address: "Rangarajapuram Main Road, Kodambakkam, Chennai 600024",
+    area: "Kodambakkam",
+    rating: 4.9,
+    latitude: "13.0456",
+    longitude: "80.2261",
+    priceRange: "₹400 - ₹2,500",
+    services: ["Haircuts", "Hair Coloring", "Keratin Treatment", "Bridal Hair", "Botox Treatment"],
+    image: ""
+  },
+  {
+    name: "Green Trends Academy",
+    description: "Popular unisex chain known for affordable grooming and beauty services.",
+    address: "South Usman Road, T. Nagar, Chennai 600017",
+    area: "T. Nagar",
+    rating: 4.9,
+    latitude: "13.0398",
+    longitude: "80.2325",
+    priceRange: "₹200 - ₹3,000",
+    services: ["Haircuts", "Facials", "Waxing", "Threading", "Manicure", "Pedicure"],
+    image: ""
+  },
+  {
+    name: "Dessange Paris",
+    description: "French luxury salon brand known for signature hair spas and elegant ambiance.",
+    address: "Cenotaph Road, Teynampet, Chennai 600018",
+    area: "Teynampet",
+    rating: 4.8,
+    latitude: "13.0375",
+    longitude: "80.2430",
+    priceRange: "₹1,000 - ₹8,000",
+    services: ["Hair Spa", "Haircuts", "Hair Coloring", "Blow-dry", "Keratin"],
+    image: ""
+  },
+  {
+    name: "Page 3 Luxury Salon",
+    description: "Premium salon specializing in Kerastase and Olaplex hair treatments.",
+    address: "3rd Floor, VR Mall, Anna Nagar, Chennai 600040",
+    area: "Anna Nagar",
+    rating: 4.8,
+    latitude: "13.0887",
+    longitude: "80.2102",
+    priceRange: "₹800 - ₹6,000",
+    services: ["Kerastase Treatments", "Olaplex", "Hair Coloring", "Facials", "Massages"],
+    image: ""
+  },
+  {
+    name: "Wink Wink Salon",
+    description: "Trusted neighborhood salon in Alwarpet for haircuts, facials, and nail services.",
+    address: "Alwarpet, Chennai 600018",
+    area: "Alwarpet",
+    rating: 4.7,
+    latitude: "13.0320",
+    longitude: "80.2505",
+    priceRange: "₹500 - ₹4,000",
+    services: ["Haircuts", "Hair Coloring", "Facials", "Pedicure", "Manicure"],
+    image: ""
+  },
+  {
+    name: "Anlon Art Salon",
+    description: "Renowned for skilled stylists, layer haircuts, and balayage highlights.",
+    address: "Khader Nawaz Khan Road, Nungambakkam, Chennai 600034",
+    area: "Nungambakkam",
+    rating: 4.8,
+    latitude: "13.0535",
+    longitude: "80.2478",
+    priceRange: "₹600 - ₹5,000",
+    services: ["Layer Haircuts", "Balayage", "Hair Coloring", "Hair Spa", "Styling"],
+    image: ""
+  },
+  {
+    name: "BBLUNT",
+    description: "Premium salon brand by Adhuna Bhabani offering personalized hair services.",
+    address: "Khader Nawaz Khan Road, Nungambakkam, Chennai 600034",
+    area: "Nungambakkam",
+    rating: 4.7,
+    latitude: "13.0540",
+    longitude: "80.2480",
+    priceRange: "₹800 - ₹6,000",
+    services: ["Haircuts", "Hair Coloring", "Blow-dry", "Hair Treatments"],
+    image: ""
+  },
+  {
+    name: "Vurve Salon",
+    description: "Gen Z favorite with 15 locations across Chennai for trendy cuts and color.",
+    address: "Ground Floor, New No 14, Old No 20, Dr Nair Rd, T. Nagar, Chennai 600017",
+    area: "T. Nagar",
+    rating: 4.9,
+    latitude: "13.0433",
+    longitude: "80.2406",
+    priceRange: "₹175 - ₹17,000",
+    services: ["Men's Hair", "Women's Hair", "Hair Coloring", "Nail Art", "Facials", "Waxing"],
+    image: "https://vurvesalon.com/wp-content/uploads/2024/06/salon-tnager.png"
+  },
+  {
+    name: "Studio Profile",
+    description: "Premium unisex salon chain known for precision haircuts and grooming.",
+    address: "3rd Floor, VR Mall, Anna Nagar, Chennai 600040",
+    area: "Anna Nagar",
+    rating: 4.5,
+    latitude: "13.0885",
+    longitude: "80.2100",
+    priceRange: "₹500 - ₹3,000",
+    services: ["Haircuts", "Hair Styling", "Facials", "Grooming"],
+    image: ""
+  },
+  {
+    name: "Green Trends",
+    description: "Well-established unisex salon chain with multiple outlets across Chennai.",
+    address: "45, Velachery Main Road, Velachery, Chennai 600042",
+    area: "Velachery",
+    rating: 4.6,
+    latitude: "12.9815",
+    longitude: "80.2180",
+    priceRange: "₹200 - ₹3,000",
+    services: ["Haircuts", "Hair Coloring", "Facials", "Waxing", "Threading"],
+    image: ""
+  },
+  {
+    name: "YLG Salon",
+    description: "Premium hair, skin & waxing salon with ELT facials and Next Gen Waxing.",
+    address: "62, 2nd Main Rd, Gandhi Nagar, Adyar, Chennai 600020",
+    area: "Adyar",
+    rating: 4.7,
+    latitude: "13.0081",
+    longitude: "80.2514",
+    priceRange: "₹100 - ₹5,000",
+    services: ["Haircuts", "Hair Coloring", "ELT Facials", "Waxing", "Bridal Makeup"],
+    image: "https://ylgchennai.in/assets/images/salon-interior-adyar-poster.jpg"
+  },
+  {
+    name: "Virtue Salon",
+    description: "Luxury unisex salon with Davines & Schwarzkopf products in Anna Nagar.",
+    address: "AA-144, 3rd Avenue, Anna Nagar, Chennai 600040",
+    area: "Anna Nagar",
+    rating: 4.7,
+    latitude: "13.0870",
+    longitude: "80.2140",
+    priceRange: "₹400 - ₹5,000",
+    services: ["Haircuts", "Keratin", "Hair Coloring", "Facials", "Waxing", "Manicure"],
+    image: ""
+  },
+  {
+    name: "Toni & Guy",
+    description: "London-trained hairstylists in a premium salon setting at Anna Nagar.",
+    address: "Y 206 Golden Glade, 5th Avenue, Anna Nagar, Chennai 600040",
+    area: "Anna Nagar",
+    rating: 4.7,
+    latitude: "13.0865",
+    longitude: "80.2118",
+    priceRange: "₹400 - ₹2,500",
+    services: ["Haircuts", "Hair Coloring", "Keratin", "Bridal", "Hair Spa"],
+    image: "https://toniandguysalon.in/wp-content/uploads/2026/05/cf7a262b-2bdf-46c9-9075-07c7837b50cc.webp"
+  },
+  {
+    name: "FootFetish Signature Salon & Spa",
+    description: "Premium salon and spa with reflexology focus and beauty services.",
+    address: "New Avadi Road, Kilpauk, Chennai 600010",
+    area: "Kilpauk",
+    rating: 4.7,
+    latitude: "13.0802",
+    longitude: "80.2387",
+    priceRange: "₹500 - ₹5,000",
+    services: ["Spa", "Haircuts", "Facials", "Pedicure", "Manicure", "Waxing"],
+    image: ""
+  },
+  {
+    name: "Zique Luxury Salon And Spa",
+    description: "High-end salon and spa in Chetpet with premium beauty treatments.",
+    address: "Raintree Place, MC Nicholas Road, Chetpet, Chennai 600031",
+    area: "Chetpet",
+    rating: 4.8,
+    latitude: "13.0705",
+    longitude: "80.2425",
+    priceRange: "₹800 - ₹6,000",
+    services: ["Haircuts", "Spa", "Facials", "Massages", "Bridal"],
+    image: ""
+  },
+  {
+    name: "PLSH Unisex Salon",
+    description: "Modern unisex salon popular for hair extensions, cuts, and coloring in T.Nagar.",
+    address: "Habibullah Road, T. Nagar, Chennai 600017",
+    area: "T. Nagar",
+    rating: 4.7,
+    latitude: "13.0430",
+    longitude: "80.2355",
+    priceRange: "₹300 - ₹4,000",
+    services: ["Haircuts", "Hair Coloring", "Hair Extensions", "Keratin", "Facials"],
+    image: ""
+  },
+  {
+    name: "Limelite Salon and Spa",
+    description: "Premium salon chain under CavinKare offering comprehensive beauty services.",
+    address: "Cenotaph Road, Alwarpet, Chennai 600018",
+    area: "Alwarpet",
+    rating: 4.6,
+    latitude: "13.0350",
+    longitude: "80.2485",
+    priceRange: "₹500 - ₹4,000",
+    services: ["Haircuts", "Hair Coloring", "Spa", "Facials", "Bridal"],
+    image: ""
+  },
+  {
+    name: "Zewez Signature Salon",
+    description: "Eco-conscious luxury salon using Kevin Murphy & Davines with 95% waste recycling.",
+    address: "Chennai",
+    area: "Chennai",
+    rating: 4.8,
+    latitude: "13.0500",
+    longitude: "80.2300",
+    priceRange: "₹600 - ₹6,000",
+    services: ["Haircuts", "Hair Coloring", "Keratin", "HydraFacial", "Bridal", "Nail Art"],
+    image: ""
+  },
+  {
+    name: "Salon Volume",
+    description: "Bridal studio and unisex salon in Pallikaranai known for bridal makeup and hair color.",
+    address: "81, Velachery Main Rd, Pallikaranai, Chennai 600100",
+    area: "Pallikaranai",
+    rating: 4.6,
+    latitude: "12.9380",
+    longitude: "80.2078",
+    priceRange: "₹200 - ₹3,500",
+    services: ["Bridal Makeup", "Hair Coloring", "Facials", "Waxing", "Hair Spa"],
+    image: ""
+  },
+  {
+    name: "Vurve Salon",
+    description: "Vurve Salon in Velachery offering premium hair, beauty & nail services.",
+    address: "81, 100 Feet Road, Rajalakshmi Nagar, Velachery, Chennai 600042",
+    area: "Velachery",
+    rating: 4.8,
+    latitude: "12.9810",
+    longitude: "80.2205",
+    priceRange: "₹175 - ₹17,000",
+    services: ["Haircuts", "Hair Coloring", "Facials", "Nail Art", "Waxing", "Massage"],
+    image: "https://vurvesalon.com/wp-content/uploads/2024/06/salon-velachery.png"
+  }
+];
+
 async function main() {
-  console.log('🌱 Seeding Chennai salons...');
+  console.log('🧹 Cleaning up database...');
+  await prisma.review.deleteMany({});
+  await prisma.booking.deleteMany({});
+  await prisma.favourite.deleteMany({});
+  await prisma.service.deleteMany({});
+  await prisma.salon.deleteMany({});
+  await prisma.user.deleteMany({});
 
-  const salons = [
-    {
-      name: 'Naturals Salon & Spa',
-      description: 'Premium salon chain known for expert hair care and skin treatments across Chennai.',
-      address: '42, Anna Salai, Teynampet',
-      area: 'Teynampet',
-      rating: 4.5,
-      reviewCount: 312,
-      image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&q=80',
-      latitude: 13.0418,
-      longitude: 80.2481,
-      priceRange: '₹₹',
-      phone: '+91 44 2435 6789',
-      openHours: '9am – 8pm',
-      tags: JSON.stringify(['hair', 'skin', 'bridal']),
-      featured: true,
-      services: [
-        { name: 'Haircut', price: 400, duration: 30, category: 'Hair' },
-        { name: 'Hair Spa', price: 1200, duration: 60, category: 'Hair' },
-        { name: 'Facial', price: 800, duration: 45, category: 'Skin' },
-        { name: 'Bridal Makeup', price: 8000, duration: 180, category: 'Bridal' },
-        { name: 'Manicure', price: 500, duration: 40, category: 'Nails' },
-      ],
-    },
-    {
-      name: 'Green Trends',
-      description: 'Eco-friendly luxury salon with trained professionals and a relaxing ambience.',
-      address: '18, Nelson Manickam Road, Aminjikarai',
-      area: 'Anna Nagar',
-      rating: 4.3,
-      reviewCount: 198,
-      image: 'https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=800&q=80',
-      latitude: 13.0862,
-      longitude: 80.2101,
-      priceRange: '₹₹',
-      phone: '+91 44 2374 5612',
-      openHours: '10am – 8pm',
-      tags: JSON.stringify(['eco', 'hair', 'skin']),
-      featured: true,
-      services: [
-        { name: 'Haircut & Style', price: 350, duration: 35, category: 'Hair' },
-        { name: 'Keratin Treatment', price: 3500, duration: 120, category: 'Hair' },
-        { name: 'Clean-up Facial', price: 600, duration: 40, category: 'Skin' },
-        { name: 'Pedicure', price: 600, duration: 45, category: 'Nails' },
-        { name: 'Threading', price: 50, duration: 10, category: 'Beauty' },
-      ],
-    },
-    {
-      name: 'Lakme Salon',
-      description: 'India\'s iconic beauty brand. Expert stylists and premium products guaranteed.',
-      address: '7, G.N. Chetty Road, T. Nagar',
-      area: 'T Nagar',
-      rating: 4.6,
-      reviewCount: 425,
-      image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&q=80',
-      latitude: 13.0418,
-      longitude: 80.2320,
-      priceRange: '₹₹₹',
-      phone: '+91 44 2815 3322',
-      openHours: '9am – 9pm',
-      tags: JSON.stringify(['premium', 'bridal', 'hair', 'makeup']),
-      featured: true,
-      services: [
-        { name: 'Signature Haircut', price: 700, duration: 45, category: 'Hair' },
-        { name: 'Bridal Makeup', price: 12000, duration: 210, category: 'Bridal' },
-        { name: 'Balayage', price: 4500, duration: 150, category: 'Hair' },
-        { name: 'Gold Facial', price: 1500, duration: 60, category: 'Skin' },
-        { name: 'Party Makeup', price: 2500, duration: 90, category: 'Makeup' },
-      ],
-    },
-    {
-      name: 'Toni & Guy',
-      description: 'International premium salon brand with world-class styling in the heart of Chennai.',
-      address: '110, Nungambakkam High Road',
-      area: 'Nungambakkam',
-      rating: 4.7,
-      reviewCount: 289,
-      image: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=800&q=80',
-      latitude: 13.0609,
-      longitude: 80.2437,
-      priceRange: '₹₹₹',
-      phone: '+91 44 4567 8901',
-      openHours: '10am – 8pm',
-      tags: JSON.stringify(['luxury', 'international', 'hair']),
-      featured: true,
-      services: [
-        { name: 'Creative Cut', price: 1200, duration: 60, category: 'Hair' },
-        { name: 'Colour & Highlights', price: 3500, duration: 120, category: 'Hair' },
-        { name: 'Brazilian Blowout', price: 5000, duration: 150, category: 'Hair' },
-        { name: 'Deep Conditioning', price: 1800, duration: 60, category: 'Hair' },
-      ],
-    },
-    {
-      name: 'Jawed Habib Hair & Beauty',
-      description: 'Affordable expert styling for men and women. Known for precision cuts.',
-      address: '3rd Floor, Phoenix Marketcity, Velachery',
-      area: 'Velachery',
-      rating: 4.2,
-      reviewCount: 156,
-      image: 'https://images.unsplash.com/photo-1600948836101-f9ffda59d250?w=800&q=80',
-      latitude: 12.9813,
-      longitude: 80.2206,
-      priceRange: '₹',
-      phone: '+91 44 6680 5544',
-      openHours: '10am – 10pm',
-      tags: JSON.stringify(['affordable', 'hair', 'men']),
-      featured: false,
-      services: [
-        { name: 'Mens Haircut', price: 250, duration: 25, category: 'Hair' },
-        { name: 'Womens Haircut', price: 400, duration: 35, category: 'Hair' },
-        { name: 'Hair Color', price: 1500, duration: 90, category: 'Hair' },
-        { name: 'Beard Trim', price: 150, duration: 15, category: 'Grooming' },
-        { name: 'Facial', price: 500, duration: 40, category: 'Skin' },
-      ],
-    },
-    {
-      name: 'Bounce Salon',
-      description: 'Trendy salon popular with young professionals. Great for modern cuts and colors.',
-      address: '56, 2nd Avenue, Anna Nagar',
-      area: 'Anna Nagar',
-      rating: 4.4,
-      reviewCount: 203,
-      image: 'https://images.unsplash.com/photo-1580618672591-eb180b1a973f?w=800&q=80',
-      latitude: 13.0856,
-      longitude: 80.2097,
-      priceRange: '₹₹',
-      phone: '+91 44 2626 7788',
-      openHours: '9:30am – 8:30pm',
-      tags: JSON.stringify(['trendy', 'hair', 'color']),
-      featured: false,
-      services: [
-        { name: 'Style Cut', price: 450, duration: 35, category: 'Hair' },
-        { name: 'Ombre Color', price: 2800, duration: 120, category: 'Hair' },
-        { name: 'Hair Spa', price: 1000, duration: 60, category: 'Hair' },
-        { name: 'Manicure', price: 400, duration: 35, category: 'Nails' },
-        { name: 'Pedicure', price: 500, duration: 45, category: 'Nails' },
-      ],
-    },
-    {
-      name: 'Femina Beauty Salon',
-      description: 'Women-only boutique salon in Adyar. Specialising in skin care and bridal packages.',
-      address: '24, LB Road, Adyar',
-      area: 'Adyar',
-      rating: 4.5,
-      reviewCount: 178,
-      image: 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=800&q=80',
-      latitude: 13.0012,
-      longitude: 80.2565,
-      priceRange: '₹₹',
-      phone: '+91 44 2441 9900',
-      openHours: '9am – 7pm',
-      tags: JSON.stringify(['women-only', 'bridal', 'skin']),
-      featured: false,
-      services: [
-        { name: 'Bridal Makeup', price: 7500, duration: 180, category: 'Bridal' },
-        { name: 'Saree Draping', price: 500, duration: 30, category: 'Bridal' },
-        { name: 'D-Tan Facial', price: 700, duration: 45, category: 'Skin' },
-        { name: 'Full Body Waxing', price: 1200, duration: 60, category: 'Beauty' },
-        { name: 'Mehendi', price: 800, duration: 90, category: 'Bridal' },
-      ],
-    },
-    {
-      name: 'Strands Salon',
-      description: 'Upscale hair studio in OMR with celebrity stylists. Best for transformations.',
-      address: '101, OMR Road, Sholinganallur',
-      area: 'OMR',
-      rating: 4.8,
-      reviewCount: 267,
-      image: 'https://images.unsplash.com/photo-1633681122182-c3fcb02e6bce?w=800&q=80',
-      latitude: 12.9001,
-      longitude: 80.2275,
-      priceRange: '₹₹₹',
-      phone: '+91 44 6688 0011',
-      openHours: '10am – 8pm',
-      tags: JSON.stringify(['luxury', 'hair', 'transformation']),
-      featured: true,
-      services: [
-        { name: 'Luxury Cut & Style', price: 1500, duration: 75, category: 'Hair' },
-        { name: 'Keratin Smoothing', price: 6000, duration: 180, category: 'Hair' },
-        { name: 'Full Color', price: 3000, duration: 120, category: 'Hair' },
-        { name: 'Scalp Treatment', price: 2000, duration: 60, category: 'Hair' },
-        { name: 'Olaplex Treatment', price: 2500, duration: 90, category: 'Hair' },
-      ],
-    },
-    {
-      name: 'Beauty Secrets',
-      description: 'Trusted neighbourhood salon in Kodambakkam with loyal clientele since 2005.',
-      address: '15, Kodambakkam High Road',
-      area: 'Kodambakkam',
-      rating: 4.1,
-      reviewCount: 134,
-      image: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=800&q=80',
-      latitude: 13.0527,
-      longitude: 80.2186,
-      priceRange: '₹',
-      phone: '+91 44 2374 1122',
-      openHours: '9am – 7:30pm',
-      tags: JSON.stringify(['affordable', 'neighbourhood', 'skin']),
-      featured: false,
-      services: [
-        { name: 'Haircut', price: 200, duration: 25, category: 'Hair' },
-        { name: 'Basic Facial', price: 300, duration: 35, category: 'Skin' },
-        { name: 'Threading', price: 40, duration: 10, category: 'Beauty' },
-        { name: 'Waxing (Arms)', price: 200, duration: 20, category: 'Beauty' },
-        { name: 'Manicure', price: 300, duration: 30, category: 'Nails' },
-      ],
-    },
-    {
-      name: 'Mirrors Unisex Salon',
-      description: 'Modern unisex salon offering premium grooming for men and women in Porur.',
-      address: '78, Porur Main Road',
-      area: 'Porur',
-      rating: 4.3,
-      reviewCount: 112,
-      image: 'https://images.unsplash.com/photo-1595476108010-b4d1f102b1b1?w=800&q=80',
-      latitude: 13.0334,
-      longitude: 80.1579,
-      priceRange: '₹₹',
-      phone: '+91 44 2482 6677',
-      openHours: '9am – 8pm',
-      tags: JSON.stringify(['unisex', 'grooming', 'men']),
-      featured: false,
-      services: [
-        { name: 'Mens Cut & Style', price: 300, duration: 30, category: 'Hair' },
-        { name: 'Womens Cut', price: 450, duration: 40, category: 'Hair' },
-        { name: 'Clean Shave', price: 200, duration: 20, category: 'Grooming' },
-        { name: 'De-tan Facial', price: 600, duration: 45, category: 'Skin' },
-        { name: 'Pedicure', price: 500, duration: 40, category: 'Nails' },
-      ],
-    },
-  ];
+  console.log('🌱 Seeding salons and services...');
 
-  for (const salonData of salons) {
-    const { services, ...salon } = salonData;
+  let imageCounter = 0;
+  for (const rawSalon of rawSalons) {
+    const services = rawSalon.services.map(mapServiceNameToObject);
+    const tags = Array.from(new Set(services.map(s => s.category.toLowerCase())));
+    
+    let imageUrl = rawSalon.image;
+    if (!imageUrl) {
+      imageUrl = fallbackImages[imageCounter % fallbackImages.length];
+      imageCounter++;
+    }
+
+    const lat = typeof rawSalon.latitude === 'string' ? parseFloat(rawSalon.latitude) : rawSalon.latitude;
+    const lng = typeof rawSalon.longitude === 'string' ? parseFloat(rawSalon.longitude) : rawSalon.longitude;
+
     const created = await prisma.salon.create({
       data: {
-        ...salon,
-        rating: salon.rating,
-        services: { create: services },
-      },
+        name: rawSalon.name,
+        description: rawSalon.description,
+        address: rawSalon.address,
+        area: rawSalon.area,
+        rating: rawSalon.rating,
+        latitude: lat,
+        longitude: lng,
+        priceRange: rawSalon.priceRange,
+        image: imageUrl,
+        tags: JSON.stringify(tags),
+        featured: rawSalon.rating >= 4.8,
+        services: {
+          create: services
+        }
+      }
     });
     console.log(`  ✅ Created: ${created.name}`);
   }
 
-  // Seed demo reviews
-  const demoReviews = [
-    { salonId: 1, rating: 5, comment: 'Amazing haircut! The stylist really understood what I wanted.', userName: 'Priya S', userId: 1 },
-    { salonId: 1, rating: 4, comment: 'Great service overall. Pricing is reasonable for the quality.', userName: 'Meera K', userId: 1 },
-    { salonId: 2, rating: 5, comment: 'Best keratin treatment in Chennai. My hair is silky smooth!', userName: 'Divya R', userId: 1 },
-    { salonId: 3, rating: 5, comment: 'The bridal makeup was absolutely stunning. Worth every rupee!', userName: 'Ananya M', userId: 1 },
-    { salonId: 3, rating: 4, comment: 'Professional staff, clean environment. Slight wait time on weekends.', userName: 'Kavitha L', userId: 1 },
-    { salonId: 4, rating: 5, comment: 'World class experience. The balayage looks incredible!', userName: 'Shruti N', userId: 1 },
-    { salonId: 5, rating: 4, comment: 'Good value for money. Quick and clean service.', userName: 'Ranjith K', userId: 1 },
-    { salonId: 6, rating: 4, comment: 'Loved the ombre color! Staff was very friendly.', userName: 'Nithya P', userId: 1 },
-    { salonId: 7, rating: 5, comment: 'Perfect bridal package! They took care of everything.', userName: 'Saranya T', userId: 1 },
-    { salonId: 8, rating: 5, comment: 'The keratin smoothing is unreal. Best salon in OMR.', userName: 'Keerthana V', userId: 1 },
-  ];
-
-  // Create a demo user first for reviews
+  console.log('👤 Seeding demo user...');
   const demoUser = await prisma.user.upsert({
-    where: { email: 'demo@beautyhubnai.com' },
+    where: { email: 'demo@beautyhubai.com' },
     update: {},
-    create: { name: 'Demo User', email: 'demo@beautyhubai.com', password: 'hashed' },
+    create: {
+      name: 'Demo User',
+      email: 'demo@beautyhubai.com',
+      password: 'hashed'
+    },
   });
 
-  for (const review of demoReviews) {
+  console.log('💬 Seeding reviews...');
+  const createdSalons = await prisma.salon.findMany({ select: { id: true } });
+
+  const demoReviews = [
+    { rating: 5, comment: 'Amazing haircut! The stylist really understood what I wanted.', userName: 'Priya S' },
+    { rating: 4, comment: 'Great service overall. Pricing is reasonable for the quality.', userName: 'Meera K' },
+    { rating: 5, comment: 'Best keratin treatment in Chennai. My hair is silky smooth!', userName: 'Divya R' },
+    { rating: 5, comment: 'The bridal makeup was absolutely stunning. Worth every rupee!', userName: 'Ananya M' },
+    { rating: 4, comment: 'Professional staff, clean environment. Slight wait time on weekends.', userName: 'Kavitha L' },
+    { rating: 5, comment: 'World class experience. The balayage looks incredible!', userName: 'Shruti N' },
+    { rating: 4, comment: 'Good value for money. Quick and clean service.', userName: 'Ranjith K' },
+    { rating: 4, comment: 'Loved the ombre color! Staff was very friendly.', userName: 'Nithya P' },
+    { rating: 5, comment: 'Perfect bridal package! They took care of everything.', userName: 'Saranya T' },
+    { rating: 5, comment: 'The keratin smoothing is unreal. Best experience!', userName: 'Keerthana V' },
+  ];
+
+  for (let i = 0; i < demoReviews.length; i++) {
+    const review = demoReviews[i];
+    const salon = createdSalons[i % createdSalons.length];
     await prisma.review.create({
-      data: { ...review, userId: demoUser.id },
+      data: {
+        rating: review.rating,
+        comment: review.comment,
+        userName: review.userName,
+        userId: demoUser.id,
+        salonId: salon.id,
+      },
     });
   }
 
-  console.log('🎉 Seeding complete! 10 salons + demo reviews added.');
+  console.log(`🎉 Seeding complete! ${createdSalons.length} salons and reviews seeded.`);
 }
 
 main()
-  .catch((e) => { console.error(e); process.exit(1); })
-  .finally(async () => { await prisma.$disconnect(); });
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
