@@ -592,6 +592,14 @@ async function main() {
       imageCounter++;
     }
 
+    // Calculate price range dynamically from the list of services
+    const prices = rawSalon.services.map(s => s.price);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    const formattedPriceRange = minPrice === maxPrice 
+      ? `₹${minPrice}`
+      : `₹${minPrice} - ₹${maxPrice}`;
+
     const created = await prisma.salon.create({
       data: {
         name: rawSalon.name,
@@ -602,7 +610,7 @@ async function main() {
         reviewCount: rawSalon.reviewCount,
         latitude: rawSalon.latitude,
         longitude: rawSalon.longitude,
-        priceRange: rawSalon.priceRange,
+        priceRange: formattedPriceRange,
         image: imageUrl,
         phone: rawSalon.phone,
         openHours: rawSalon.openHours,
