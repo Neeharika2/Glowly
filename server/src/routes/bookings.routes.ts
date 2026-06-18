@@ -7,7 +7,7 @@ const router = Router();
 // POST /api/bookings — create booking
 router.post('/', authenticate, async (req: AuthRequest, res) => {
   try {
-    const { salonId, serviceId, date, time } = req.body;
+    const { salonId, serviceId, stylistId, date, time } = req.body;
     const userId = req.userId!;
 
     const booking = await prisma.booking.create({
@@ -15,6 +15,7 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
         userId,
         salonId: parseInt(salonId),
         serviceId: parseInt(serviceId),
+        stylistId: stylistId ? parseInt(stylistId) : null,
         date: new Date(date),
         time,
         status: 'confirmed',
@@ -22,6 +23,7 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
       include: {
         salon: { select: { name: true, image: true, address: true } },
         service: { select: { name: true, price: true } },
+        stylist: { select: { name: true, specialization: true } },
       },
     });
 
@@ -40,6 +42,7 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
       include: {
         salon: { select: { name: true, image: true, address: true, area: true } },
         service: { select: { name: true, price: true } },
+        stylist: { select: { name: true, specialization: true } },
       },
       orderBy: { date: 'desc' },
     });
@@ -53,13 +56,13 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
 // DELETE /api/bookings/:id — cancel booking
 router.delete('/:id', authenticate, async (req: AuthRequest, res) => {
   try {
-    const booking = await prisma.booking.findUnique({ where: { id: parseInt(req.params.id) } });
+    const booking = await prisma.booking.findUnique({ where: { id: parseInt(req.params.id as string) } });
     if (!booking || booking.userId !== req.userId) {
       res.status(403).json({ error: 'Forbidden' });
       return;
     }
     await prisma.booking.update({
-      where: { id: parseInt(req.params.id) },
+      where: { id: parseInt(req.params.id as string) },
       data: { status: 'cancelled' },
     });
     res.json({ message: 'Booking cancelled' });

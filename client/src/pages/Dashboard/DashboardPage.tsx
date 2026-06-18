@@ -89,6 +89,9 @@ export default function DashboardPage() {
                             <div>
                               <h3 className="font-bold text-dark">{b.salon?.name}</h3>
                               <p className="text-sm text-gray-500">{b.service?.name}</p>
+                              {b.stylist && (
+                                <p className="text-xs text-rose-600 font-medium mt-0.5">Stylist: {b.stylist.name} ({b.stylist.specialization})</p>
+                              )}
                               <div className="flex gap-3 mt-2 text-xs font-medium text-gray-600">
                                 <span className="flex items-center gap-1"><CalendarIcon className="w-3.5 h-3.5 text-gold"/> {new Date(b.date).toLocaleDateString()}</span>
                                 <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-gold"/> {b.time}</span>
@@ -119,6 +122,9 @@ export default function DashboardPage() {
                             <div>
                               <h3 className="font-bold text-dark">{b.salon?.name}</h3>
                               <p className="text-sm text-gray-500">{b.service?.name}</p>
+                              {b.stylist && (
+                                <p className="text-xs text-rose-500 font-medium">Stylist: {b.stylist.name}</p>
+                              )}
                               <div className="text-xs text-gray-400 mt-1">{new Date(b.date).toLocaleDateString()} at {b.time}</div>
                             </div>
                           </div>

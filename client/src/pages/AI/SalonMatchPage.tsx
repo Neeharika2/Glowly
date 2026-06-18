@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkles, ChevronRight, CheckCircle2, ChevronLeft, MapPin } from 'lucide-react';
 import api from '../../lib/api';
@@ -10,11 +10,30 @@ const SKIN_TYPES = ['Normal', 'Oily', 'Dry', 'Combination', 'Sensitive'];
 const BUDGETS = ['₹500 - ₹1500', '₹1500 - ₹3000', '₹3000 - ₹5000', '₹5000+'];
 const AREAS = ['Anna Nagar', 'T Nagar', 'Adyar', 'Nungambakkam', 'OMR', 'Velachery', 'Anywhere'];
 
+const LOADER_PHRASES = [
+  "Gemini AI is analyzing salons across Chennai based on your profile...",
+  "Consulting our top local beauty specialists...",
+  "Filtering salons in your preferred areas...",
+  "Matching services with your budget range...",
+  "Comparing hair and skin type suitability scorecards...",
+  "Almost there! Polishing your recommendations..."
+];
+
 export default function SalonMatchPage() {
-  const [step, setStep] = useState(0);
-  const [data, setData] = useState<SalonMatchInput>({ occasion: '', hairType: '', skinType: '', budget: '', area: '' });
+  const [step, setStep] = useState<number>(() => {
+    const saved = sessionStorage.getItem('glowly_match_step');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+  const [data, setData] = useState<SalonMatchInput>(() => {
+    const saved = sessionStorage.getItem('glowly_match_data');
+    return saved ? JSON.parse(saved) : { occasion: '', hairType: '', skinType: '', budget: '', area: '' };
+  });
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<SalonMatchResult[] | null>(null);
+  const [loaderTextIndex, setLoaderTextIndex] = useState(0);
+  const [results, setResults] = useState<SalonMatchResult[] | null>(() => {
+    const saved = sessionStorage.getItem('glowly_match_results');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [error, setError] = useState<string | null>(null);
 
   const steps = [
@@ -24,6 +43,42 @@ export default function SalonMatchPage() {
     { title: 'What is your budget?', key: 'budget', options: BUDGETS },
     { title: 'Preferred area in Chennai?', key: 'area', options: AREAS },
   ];
+
+  useEffect(() => {
+    let interval: any;
+    if (loading) {
+      setLoaderTextIndex(0);
+      interval = setInterval(() => {
+        setLoaderTextIndex((prev) => (prev + 1) % LOADER_PHRASES.length);
+      }, 3500);
+    }
+    return () => clearInterval(interval);
+  }, [loading]);
+
+  useEffect(() => {
+    sessionStorage.setItem('glowly_match_step', step.toString());
+  }, [step]);
+
+  useEffect(() => {
+    sessionStorage.setItem('glowly_match_data', JSON.stringify(data));
+  }, [data]);
+
+  useEffect(() => {
+    if (results) {
+      sessionStorage.setItem('glowly_match_results', JSON.stringify(results));
+    } else {
+      sessionStorage.removeItem('glowly_match_results');
+    }
+  }, [results]);
+
+  const handleRetake = () => {
+    sessionStorage.removeItem('glowly_match_step');
+    sessionStorage.removeItem('glowly_match_data');
+    sessionStorage.removeItem('glowly_match_results');
+    setResults(null);
+    setStep(0);
+    setData({ occasion: '', hairType: '', skinType: '', budget: '', area: '' });
+  };
 
   const handleSelect = (val: string) => {
     const key = steps[step].key as keyof SalonMatchInput;
@@ -105,8 +160,8 @@ export default function SalonMatchPage() {
           </div>
 
           <div className="text-center mt-10">
-            <button onClick={() => { setResults(null); setStep(0); setData({ occasion:'', hairType:'', skinType:'', budget:'', area:'' }); }}
-              className="text-gray-500 hover:text-dark font-medium underline text-sm">Retake Quiz</button>
+            <button onClick={handleRetake}
+              className="text-gray-500 hover:text-dark font-medium underline text-sm cursor-pointer">Retake Quiz</button>
           </div>
         </div>
       </div>
@@ -117,12 +172,14 @@ export default function SalonMatchPage() {
     <div className="min-h-[90vh] bg-gray-50 flex items-center justify-center py-12 px-4">
       <div className="max-w-xl w-full">
         {loading ? (
-          <div className="card p-12 text-center animate-pulse">
+          <div className="card p-12 text-center border-gold/30">
             <div className="w-16 h-16 rounded-full bg-ai-card flex items-center justify-center mx-auto mb-6 shadow-rose border border-pink-100">
               <Sparkles className="w-8 h-8 text-rose animate-spin" style={{ animationDuration: '3s' }} />
             </div>
             <h2 className="text-2xl font-bold font-display mb-2">Finding your perfect match...</h2>
-            <p className="text-gray-500">Gemini AI is analyzing salons across Chennai based on your profile.</p>
+            <p className="text-gray-500 min-h-[40px] flex items-center justify-center text-sm font-medium transition-all duration-300">
+              {LOADER_PHRASES[loaderTextIndex]}
+            </p>
           </div>
         ) : (
           <div className="card p-8 bg-white relative overflow-hidden animate-slide-up">

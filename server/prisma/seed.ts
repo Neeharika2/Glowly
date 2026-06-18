@@ -573,11 +573,40 @@ const salonsData = [
   }
 ];
 
+const stylistNames = [
+  'Rohan Mehta', 'Aisha Sharma', 'Karthik Rao', 'Priya Krishnan', 'Vikram Sen',
+  'Deepika Paul', 'Sanjay Nair', 'Meera Joshi', 'Arjun Verma', 'Anjali Gupta'
+];
+
+const specializations = [
+  'Master Hair Colorist', 'Bridal Makeup Expert', 'Senior Hair Stylist',
+  'Advanced Skincare Specialist', 'Creative Director', 'Nail Art Specialist'
+];
+
+const bios = [
+  'Over 8 years of experience in luxury hair styling and color transitions.',
+  'Specializes in traditional and contemporary bridal makeovers with a flawless finish.',
+  'Expert in creative haircuts, texture treatments, and precision styling.',
+  'Dedicated to organic skincare treatments and facial rejuvenation techniques.',
+  'Trained internationally in fashion hair coloring and high-end styling.',
+  'Passionate about intricate nail art designs and premium manicures.'
+];
+
+const avatars = [
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&q=80',
+  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&q=80',
+  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&q=80',
+  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&q=80',
+  'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&q=80',
+  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&q=80'
+];
+
 async function main() {
   console.log('🧹 Cleaning up database...');
   await prisma.review.deleteMany({});
   await prisma.booking.deleteMany({});
   await prisma.favourite.deleteMany({});
+  await prisma.stylist.deleteMany({});
   await prisma.service.deleteMany({});
   await prisma.salon.deleteMany({});
   await prisma.user.deleteMany({});
@@ -618,6 +647,19 @@ async function main() {
         featured: rawSalon.featured,
         services: {
           create: rawSalon.services
+        },
+        stylists: {
+          create: Array.from({ length: 3 }).map((_, idx) => {
+            const stylistIndex = (imageCounter * 3 + idx) % stylistNames.length;
+            const specIndex = (imageCounter * 3 + idx) % specializations.length;
+            return {
+              name: stylistNames[stylistIndex],
+              specialization: specializations[specIndex],
+              bio: bios[specIndex],
+              avatar: avatars[stylistIndex % avatars.length],
+              rating: parseFloat((4.5 + Math.random() * 0.5).toFixed(1))
+            };
+          })
         }
       }
     });

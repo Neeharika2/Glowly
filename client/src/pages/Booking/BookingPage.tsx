@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { CheckCircle2, ChevronRight, Calendar, Clock, CreditCard } from 'lucide-react';
+import { CheckCircle2, ChevronRight, Calendar, Clock, CreditCard, Sparkles } from 'lucide-react';
 import api from '../../lib/api';
-import { Salon, Service } from '../../types';
+import { Salon, Service, Stylist } from '../../types';
 
-const STEPS = ['Service', 'Date & Time', 'Confirm'];
+const STEPS = ['Service', 'Stylist', 'Date & Time', 'Confirm'];
 
 export default function BookingPage() {
   const { salonId } = useParams();
@@ -16,6 +16,7 @@ export default function BookingPage() {
   const [loading, setLoading] = useState(true);
 
   const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [selectedStylist, setSelectedStylist] = useState<Stylist | null>(null);
   const [date, setDate] = useState<string>('');
   const [time, setTime] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
@@ -40,6 +41,7 @@ export default function BookingPage() {
       await api.post('/bookings', {
         salonId,
         serviceId: selectedService.id,
+        stylistId: selectedStylist?.id || null,
         date,
         time
       });
@@ -74,10 +76,10 @@ export default function BookingPage() {
             <CheckCircle2 className="w-10 h-10" />
           </div>
           <h2 className="text-2xl font-bold font-display mb-2">Booking Confirmed!</h2>
-          <p className="text-gray-600 mb-8">
-            Your appointment at <strong>{salon.name}</strong> is set for {date} at {time}.
+          <p className="text-gray-600 mb-8 text-sm">
+            Your appointment at <strong>{salon.name}</strong> is set for {date} at {time} with {selectedStylist ? selectedStylist.name : 'any available stylist'}.
           </p>
-          <button onClick={() => navigate('/dashboard')} className="btn-primary w-full justify-center">
+          <button onClick={() => navigate('/dashboard')} className="btn-primary w-full justify-center cursor-pointer">
             View My Bookings
           </button>
         </div>
@@ -98,7 +100,7 @@ export default function BookingPage() {
                 {i + 1}
               </div>
               <span className={`ml-2 text-sm font-medium hidden sm:block ${step >= i ? 'text-dark' : 'text-gray-400'}`}>{s}</span>
-              {i < STEPS.length - 1 && <div className={`w-10 sm:w-20 h-1 mx-2 sm:mx-4 rounded ${step > i ? 'bg-gold' : 'bg-gray-200'}`} />}
+              {i < STEPS.length - 1 && <div className={`w-6 sm:w-16 h-1 mx-2 sm:mx-4 rounded ${step > i ? 'bg-gold' : 'bg-gray-200'}`} />}
             </div>
           ))}
         </div>
@@ -110,7 +112,7 @@ export default function BookingPage() {
               <div className="space-y-3">
                 {salon.services.map(s => (
                   <button key={s.id} onClick={() => setSelectedService(s)}
-                    className={`w-full text-left p-4 rounded-xl border-2 transition-all flex justify-between items-center ${selectedService?.id === s.id ? 'border-gold bg-amber-50/50' : 'border-gray-100 hover:border-gray-300'}`}>
+                    className={`w-full text-left p-4 rounded-xl border-2 transition-all flex justify-between items-center cursor-pointer ${selectedService?.id === s.id ? 'border-gold bg-amber-50/50' : 'border-gray-100 hover:border-gray-300'}`}>
                     <div>
                       <h3 className="font-semibold text-dark">{s.name}</h3>
                       <p className="text-sm text-gray-500">{s.duration} mins</p>
@@ -120,13 +122,53 @@ export default function BookingPage() {
                 ))}
               </div>
               <button disabled={!selectedService} onClick={() => setStep(1)}
-                className="btn-primary w-full justify-center mt-8 disabled:opacity-50">
-                Continue to Date <ChevronRight className="w-4 h-4" />
+                className="btn-primary w-full justify-center mt-8 disabled:opacity-50 cursor-pointer">
+                Continue to Stylist <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           )}
 
           {step === 1 && (
+            <div className="animate-fade-in">
+              <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><Sparkles className="w-5 h-5 text-gold"/> Select an Expert Stylist</h2>
+              
+              <div className="grid sm:grid-cols-2 gap-4">
+                {/* Any Stylist Option */}
+                <button onClick={() => setSelectedStylist(null)}
+                  className={`w-full text-left p-4 rounded-xl border-2 transition-all flex items-center gap-4 cursor-pointer ${selectedStylist === null ? 'border-gold bg-amber-50/50 shadow-gold/10' : 'border-gray-100 hover:border-gray-300'}`}>
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gold to-rose flex items-center justify-center text-white font-bold text-lg">
+                    ✨
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-dark">Any Stylist</h3>
+                    <p className="text-xs text-gray-500">Fastest booking availability</p>
+                  </div>
+                </button>
+
+                {/* Individual Stylists */}
+                {salon.stylists?.map(stylist => (
+                  <button key={stylist.id} onClick={() => setSelectedStylist(stylist)}
+                    className={`w-full text-left p-4 rounded-xl border-2 transition-all flex items-center gap-4 cursor-pointer ${selectedStylist?.id === stylist.id ? 'border-gold bg-amber-50/50 shadow-gold/10' : 'border-gray-100 hover:border-gray-300'}`}>
+                    <img src={stylist.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&q=80'}
+                      alt={stylist.name} className="w-12 h-12 rounded-full object-cover border" />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-dark truncate">{stylist.name}</h3>
+                      <p className="text-xs text-gray-500 truncate">{stylist.specialization}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-4 mt-10">
+                <button onClick={() => setStep(0)} className="btn-outline flex-1 justify-center cursor-pointer">Back</button>
+                <button onClick={() => setStep(2)} className="btn-primary flex-1 justify-center cursor-pointer">
+                  Continue to Date <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
             <div className="animate-fade-in">
               <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><Calendar className="w-5 h-5 text-gold"/> Choose Date & Time</h2>
               
@@ -136,7 +178,7 @@ export default function BookingPage() {
                   const dStr = d.toISOString().split('T')[0];
                   return (
                     <button key={dStr} onClick={() => setDate(dStr)}
-                      className={`flex-shrink-0 w-20 p-3 rounded-xl border-2 text-center transition-all ${date === dStr ? 'border-gold bg-amber-50/50 text-gold' : 'border-gray-100 hover:border-gray-300'}`}>
+                      className={`flex-shrink-0 w-20 p-3 rounded-xl border-2 text-center transition-all cursor-pointer ${date === dStr ? 'border-gold bg-amber-50/50 text-gold' : 'border-gray-100 hover:border-gray-300'}`}>
                       <div className="text-xs mb-1">{d.toLocaleDateString('en-US', { weekday: 'short' })}</div>
                       <div className="text-xl font-bold">{d.getDate()}</div>
                       <div className="text-xs">{d.toLocaleDateString('en-US', { month: 'short' })}</div>
@@ -149,22 +191,22 @@ export default function BookingPage() {
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                 {times.map(t => (
                   <button key={t} onClick={() => setTime(t)}
-                    className={`py-3 rounded-xl border-2 text-sm font-medium transition-all ${time === t ? 'border-gold bg-amber-50/50 text-gold' : 'border-gray-100 hover:border-gray-300'}`}>
+                    className={`py-3 rounded-xl border-2 text-sm font-medium transition-all cursor-pointer ${time === t ? 'border-gold bg-amber-50/50 text-gold' : 'border-gray-100 hover:border-gray-300'}`}>
                     {t}
                   </button>
                 ))}
               </div>
 
               <div className="flex gap-4 mt-10">
-                <button onClick={() => setStep(0)} className="btn-outline flex-1 justify-center">Back</button>
-                <button disabled={!date || !time} onClick={() => setStep(2)} className="btn-primary flex-1 justify-center disabled:opacity-50">
+                <button onClick={() => setStep(1)} className="btn-outline flex-1 justify-center cursor-pointer">Back</button>
+                <button disabled={!date || !time} onClick={() => setStep(3)} className="btn-primary flex-1 justify-center disabled:opacity-50 cursor-pointer">
                   Review <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
           )}
 
-          {step === 2 && (
+          {step === 3 && (
             <div className="animate-fade-in">
               <h2 className="text-xl font-bold mb-6">Confirm Details</h2>
               <div className="bg-gray-50 rounded-2xl p-6 mb-8 border border-gray-100">
@@ -176,21 +218,25 @@ export default function BookingPage() {
                   </div>
                 </div>
                 
-                <div className="space-y-4">
+                <div className="space-y-4 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-500 flex items-center gap-2"><ScissorsIcon className="w-4 h-4"/> Service</span>
-                    <span className="font-medium">{selectedService?.name}</span>
+                    <span className="font-medium text-dark">{selectedService?.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 flex items-center gap-2"><Sparkles className="w-4 h-4 text-gold"/> Stylist</span>
+                    <span className="font-medium text-dark">{selectedStylist ? selectedStylist.name : 'Any Available Stylist'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500 flex items-center gap-2"><Calendar className="w-4 h-4"/> Date</span>
-                    <span className="font-medium">{date && new Date(date).toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric'})}</span>
+                    <span className="font-medium text-dark">{date && new Date(date).toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric'})}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500 flex items-center gap-2"><Clock className="w-4 h-4"/> Time</span>
-                    <span className="font-medium">{time}</span>
+                    <span className="font-medium text-dark">{time}</span>
                   </div>
                   <div className="pt-4 mt-4 border-t border-gray-200 flex justify-between items-center">
-                    <span className="font-bold text-lg">Total Amount</span>
+                    <span className="font-bold text-lg text-dark">Total Amount</span>
                     <span className="font-bold text-2xl text-gold">₹{selectedService?.price}</span>
                   </div>
                 </div>
@@ -201,8 +247,8 @@ export default function BookingPage() {
               </div>
 
               <div className="flex gap-4">
-                <button onClick={() => setStep(1)} className="btn-outline flex-1 justify-center" disabled={submitting}>Back</button>
-                <button onClick={handleBook} disabled={submitting} className="btn-primary flex-1 justify-center shadow-gold">
+                <button onClick={() => setStep(2)} className="btn-outline flex-1 justify-center cursor-pointer" disabled={submitting}>Back</button>
+                <button onClick={handleBook} disabled={submitting} className="btn-primary flex-1 justify-center shadow-gold cursor-pointer">
                   {submitting ? 'Confirming...' : 'Confirm Booking'}
                 </button>
               </div>
@@ -217,3 +263,4 @@ export default function BookingPage() {
 const ScissorsIcon = ({className='w-5 h-5 text-gold'}: {className?: string}) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
 );
+

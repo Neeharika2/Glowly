@@ -4,6 +4,7 @@ import { Star, MapPin, Clock, Phone, Sparkles, AlertCircle } from 'lucide-react'
 import api from '../../lib/api';
 import { Salon, Review, ReviewSummary } from '../../types';
 import { useAuth } from '../../context/AuthContext';
+import InteractiveMap from '../../components/map/InteractiveMap';
 
 export default function SalonDetailPage() {
   const { id } = useParams();
@@ -13,6 +14,25 @@ export default function SalonDetailPage() {
   const [summary, setSummary] = useState<ReviewSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryLoaderIndex, setSummaryLoaderIndex] = useState(0);
+
+  const summaryPhrases = [
+    "Reading customer reviews...",
+    "Analyzing customer feedback pros and cons...",
+    "Evaluating aggregate customer sentiment...",
+    "Synthesizing overall review summary scorecard..."
+  ];
+
+  useEffect(() => {
+    let interval: any;
+    if (summaryLoading) {
+      setSummaryLoaderIndex(0);
+      interval = setInterval(() => {
+        setSummaryLoaderIndex((prev) => (prev + 1) % summaryPhrases.length);
+      }, 3000);
+    }
+    return () => clearInterval(interval);
+  }, [summaryLoading]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -125,9 +145,11 @@ export default function SalonDetailPage() {
               </div>
               <div className="p-6 md:p-8">
                 {summaryLoading ? (
-                  <div className="animate-pulse space-y-4">
-                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  <div className="flex flex-col items-center justify-center py-6 text-center animate-pulse gap-3">
+                    <div className="w-6 h-6 border-2 border-rose border-t-transparent rounded-full animate-spin" />
+                    <p className="text-xs text-gray-500 font-medium tracking-wide">
+                      {summaryPhrases[summaryLoaderIndex]}
+                    </p>
                   </div>
                 ) : summary ? (
                   <div className="grid sm:grid-cols-2 gap-6">
@@ -198,15 +220,55 @@ export default function SalonDetailPage() {
 
         {/* Right Col */}
         <div className="space-y-6">
-          <div className="card p-4 overflow-hidden sticky top-24">
+          <div className="card p-4 overflow-hidden sticky top-24 space-y-4">
             {/* Location Info */}
-            <div className="rounded-xl bg-gray-50 border border-gray-100 p-5 mb-4">
+            <div className="rounded-xl bg-gray-50 border border-gray-100 p-5">
               <h3 className="font-semibold text-dark text-sm mb-3 flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-gold" /> Location
               </h3>
               <p className="text-sm text-gray-600">{salon.address}</p>
               {salon.area && <p className="text-sm text-gray-500 mt-1">{salon.area}, Chennai</p>}
             </div>
+
+            {/* Interactive map */}
+            {salon.latitude && salon.longitude && (
+              <div className="h-60 rounded-xl overflow-hidden">
+                <InteractiveMap
+                  latitude={salon.latitude}
+                  longitude={salon.longitude}
+                  salonName={salon.name}
+                  address={salon.address}
+                />
+              </div>
+            )}
+
+            {/* Stylists Team Card */}
+            {salon.stylists && salon.stylists.length > 0 && (
+              <div className="rounded-xl border border-gray-100 p-5 space-y-4">
+                <h3 className="font-semibold text-dark text-sm flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-rose" /> Meet our Experts
+                </h3>
+                <div className="space-y-3.5">
+                  {salon.stylists.map((stylist) => (
+                    <div key={stylist.id} className="flex items-center gap-3">
+                      <img 
+                        src={stylist.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&q=80'} 
+                        alt={stylist.name} 
+                        className="w-9 h-9 rounded-full object-cover border border-gold/20"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-dark truncate">{stylist.name}</p>
+                        <p className="text-[10px] text-gray-500 truncate">{stylist.specialization}</p>
+                      </div>
+                      <div className="flex items-center gap-0.5 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                        <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
+                        <span>{Number(stylist.rating).toFixed(1)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="p-4 rounded-xl bg-blue-50 flex gap-3 items-start">
               <AlertCircle className="w-5 h-5 text-blue-500 flex-shrink-0" />

@@ -7,6 +7,16 @@ export interface Service {
   category?: string;
 }
 
+export interface Stylist {
+  id: number;
+  salonId: number;
+  name: string;
+  bio?: string;
+  avatar?: string;
+  rating: number;
+  specialization?: string;
+}
+
 export interface Salon {
   id: number;
   name: string;
@@ -21,6 +31,7 @@ export interface Salon {
   longitude?: number;
   priceRange: '₹' | '₹₹' | '₹₹₹';
   services: Service[];
+  stylists?: Stylist[];
   phone?: string;
   openHours?: string;
   tags?: string;
@@ -43,12 +54,14 @@ export interface Booking {
   userId: number;
   salonId: number;
   serviceId: number;
+  stylistId?: number;
   date: string;
   time: string;
   status: 'confirmed' | 'completed' | 'cancelled';
   createdAt: string;
   salon?: { name: string; image?: string; address: string; area: string };
   service?: { name: string; price: number };
+  stylist?: { name: string; specialization?: string };
 }
 
 export interface User {

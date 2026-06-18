@@ -23,6 +23,21 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
+// Request logging middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const logMessage = `[${new Date().toLocaleTimeString()}] ${req.method} ${req.originalUrl} - ${res.statusCode} (${duration}ms)`;
+    if (res.statusCode >= 400) {
+      console.error(`❌ ${logMessage}`);
+    } else {
+      console.log(`✅ ${logMessage}`);
+    }
+  });
+  next();
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/salons', salonRoutes);

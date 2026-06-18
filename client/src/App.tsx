@@ -12,6 +12,7 @@ import DashboardPage from './pages/Dashboard/DashboardPage';
 import ConciergePage from './pages/AI/ConciergePage';
 import SalonMatchPage from './pages/AI/SalonMatchPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import VoiceAssistant from './components/ai/VoiceAssistant';
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
             </Routes>
           </main>
           <Footer />
+          <VoiceAssistant />
         </div>
       </BrowserRouter>
     </AuthProvider>

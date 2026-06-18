@@ -48,7 +48,7 @@ router.get('/:id', async (req, res) => {
   try {
     const salon = await prisma.salon.findUnique({
       where: { id: parseInt(req.params.id) },
-      include: { services: true },
+      include: { services: true, stylists: true },
     });
     if (!salon) { res.status(404).json({ error: 'Salon not found' }); return; }
     res.json({ salon });

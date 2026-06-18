@@ -46,6 +46,7 @@ model Salon {
   bookings   Booking[]
   reviews    Review[]
   favourites Favourite[]
+  stylists   Stylist[]
 
   @@map("salons")
 }
@@ -69,14 +70,16 @@ model Booking {
   userId    Int      @map("user_id")
   salonId   Int      @map("salon_id")
   serviceId Int      @map("service_id")
+  stylistId Int?     @map("stylist_id")
   date      DateTime
   time      String
   status    String   @default("confirmed")
   createdAt DateTime @default(now()) @map("created_at")
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  salon   Salon   @relation(fields: [salonId], references: [id], onDelete: Cascade)
-  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  salon   Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  service Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  stylist Stylist? @relation(fields: [stylistId], references: [id], onDelete: SetNull)
 
   @@map("bookings")
 }
@@ -107,4 +110,20 @@ model Favourite {
 
   @@unique([userId, salonId])
   @@map("favourites")
+}
+
+model Stylist {
+  id             Int      @id @default(autoincrement())
+  salonId        Int      @map("salon_id")
+  name           String
+  bio            String?
+  avatar         String?
+  rating         Float    @default(5.0)
+  specialization String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  salon    Salon     @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@map("stylists")
 }

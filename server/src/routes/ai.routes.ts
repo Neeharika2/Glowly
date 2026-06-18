@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { SchemaType } from '@google/generative-ai';
 import { gemini } from '../lib/gemini';
 import prisma from '../lib/prisma';
 
@@ -8,11 +9,11 @@ const router = Router();
 // Helper: get all salons as compact context string
 // ─────────────────────────────────────────────────────────
 async function getSalonContext(): Promise<string> {
-  const salons = await prisma.salon.findMany({ include: { services: true } });
+  const salons = await prisma.salon.findMany({ include: { services: true, stylists: true } });
   return salons
     .map(
       (s) =>
-        `- ${s.name} | ${s.area} | ${s.priceRange} | Rating: ${s.rating} | Services: ${s.services.map((sv) => `${sv.name}(₹${sv.price})`).join(', ')}`
+        `- ${s.name} | ${s.area} | ${s.priceRange} | Rating: ${s.rating} | Services: ${s.services.map((sv) => `${sv.name}(₹${sv.price})`).join(', ')} | Stylists: ${s.stylists.map(st => `${st.name} (${st.specialization})`).join(', ')}`
     )
     .join('\n');
 }
@@ -89,11 +90,33 @@ Guidelines:
 router.post('/salon-match', async (req: Request, res: Response) => {
   try {
     const { occasion, hairType, skinType, budget, area } = req.body;
-    const salons = await prisma.salon.findMany({ include: { services: true } });
+    
+    // Pre-filter salons to reduce context size and speed up Gemini response times
+    let salons = await prisma.salon.findMany({
+      where: area && area !== 'Anywhere' ? {
+        OR: [
+          { area: { contains: area } },
+          { featured: true }
+        ]
+      } : {},
+      include: { services: true, stylists: true },
+      orderBy: { rating: 'desc' },
+      take: 8
+    });
+
+    // Fallback in case area filter returns too few salons
+    if (salons.length < 3) {
+      salons = await prisma.salon.findMany({
+        include: { services: true, stylists: true },
+        orderBy: { rating: 'desc' },
+        take: 8
+      });
+    }
+
     const salonContext = salons
       .map(
         (s) =>
-          `ID:${s.id} | ${s.name} | ${s.area} | ${s.priceRange} | Rating:${s.rating} | Services: ${s.services.map((sv) => sv.name).join(', ')}`
+          `ID:${s.id} | ${s.name} | ${s.area} | ${s.priceRange} | Rating:${s.rating} | Services: ${s.services.map((sv) => sv.name).join(', ')} | Stylists: ${s.stylists.map(st => `${st.id}:${st.name}(${st.specialization})`).join(', ')}`
       )
       .join('\n');
 
@@ -104,28 +127,42 @@ router.post('/salon-match', async (req: Request, res: Response) => {
 - Budget: ${budget}
 - Preferred Area in Chennai: ${area}
 
-Available salons:
+Available salons and stylists:
 ${salonContext}
 
-Based on this profile, return the top 3 matching salons as a JSON array. Each object must have:
-{
-  "salonId": number,
-  "matchScore": number (0-100),
-  "reason": "2-3 sentence explanation of why this salon is perfect for this user",
-  "recommendedServices": ["service1", "service2"]
-}
+Based on this profile, return the top 3 matching salons as a JSON array of objects.`;
 
-Return ONLY the JSON array, no other text.`;
+    const result = await gemini.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              salonId: { type: SchemaType.INTEGER },
+              matchScore: { type: SchemaType.INTEGER },
+              reason: { type: SchemaType.STRING },
+              recommendedServices: {
+                type: SchemaType.ARRAY,
+                items: { type: SchemaType.STRING }
+              }
+            },
+            required: ['salonId', 'matchScore', 'reason', 'recommendedServices']
+          }
+        }
+      }
+    });
 
-    const result = await gemini.generateContent(prompt);
-    const text = extractJSON(result.response.text());
+    const text = result.response.text();
     const matches = JSON.parse(text);
 
     const results = await Promise.all(
       matches.map(async (m: { salonId: number; matchScore: number; reason: string; recommendedServices: string[] }) => {
         const salon = await prisma.salon.findUnique({
           where: { id: m.salonId },
-          include: { services: true },
+          include: { services: true, stylists: true },
         });
         return { salon, matchScore: m.matchScore, reason: m.reason, recommendedServices: m.recommendedServices };
       })
@@ -160,16 +197,32 @@ router.post('/review-summary', async (req: Request, res: Response) => {
 
 ${reviewText}
 
-Return ONLY this JSON structure, no other text:
-{
-  "pros": ["pro1", "pro2", "pro3"],
-  "cons": ["con1", "con2"],
-  "sentiment": "Highly Positive | Positive | Mixed | Negative",
-  "score": 4.5
-}`;
+Please outline the main positive points, negative points, overall sentiment, and numerical score out of 5 based on customer comments.`;
 
-    const result = await gemini.generateContent(prompt);
-    const text = extractJSON(result.response.text());
+    const result = await gemini.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: SchemaType.OBJECT,
+          properties: {
+            pros: {
+              type: SchemaType.ARRAY,
+              items: { type: SchemaType.STRING }
+            },
+            cons: {
+              type: SchemaType.ARRAY,
+              items: { type: SchemaType.STRING }
+            },
+            sentiment: { type: SchemaType.STRING },
+            score: { type: SchemaType.NUMBER }
+          },
+          required: ['pros', 'cons', 'sentiment', 'score']
+        }
+      }
+    });
+
+    const text = result.response.text();
     const summary = JSON.parse(text);
     res.json(summary);
   } catch (err) {
@@ -187,18 +240,30 @@ router.post('/search', async (req: Request, res: Response) => {
     const prompt = `A user typed this search query for finding beauty salons in Chennai:
 "${query}"
 
-Extract structured search filters from this query and return ONLY this JSON (use null for fields not mentioned):
-{
-  "area": "Anna Nagar" | null,
-  "priceRange": "₹" | "₹₹" | "₹₹₹" | null,
-  "minRating": 4.0 | null,
-  "services": ["haircut", "facial"] | null,
-  "occasion": "bridal" | "casual" | "party" | null,
-  "keywords": "any remaining keywords" | null
-}`;
+Extract structured search filters from this query and return ONLY the JSON representation.`;
 
-    const result = await gemini.generateContent(prompt);
-    const text = extractJSON(result.response.text());
+    const result = await gemini.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: SchemaType.OBJECT,
+          properties: {
+            area: { type: SchemaType.STRING },
+            priceRange: { type: SchemaType.STRING },
+            minRating: { type: SchemaType.NUMBER },
+            services: {
+              type: SchemaType.ARRAY,
+              items: { type: SchemaType.STRING }
+            },
+            occasion: { type: SchemaType.STRING },
+            keywords: { type: SchemaType.STRING }
+          }
+        }
+      }
+    });
+
+    const text = result.response.text();
     const filters = JSON.parse(text);
 
     // Build Prisma where clause from filters
@@ -219,7 +284,7 @@ Extract structured search filters from this query and return ONLY this JSON (use
 
     const salons = await prisma.salon.findMany({
       where,
-      include: { services: true },
+      include: { services: true, stylists: true },
       orderBy: { rating: 'desc' },
     });
 
