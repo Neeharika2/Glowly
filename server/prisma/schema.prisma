@@ -8,59 +8,56 @@ datasource db {
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
-  name      String
-  email     String    @unique
-  password  String?
-  googleId  String?   @unique @map("google_id")
-  avatar    String?
-  createdAt DateTime  @default(now()) @map("created_at")
-
+  id         Int         @id @default(autoincrement())
+  name       String
+  email      String      @unique
+  password   String?
+  googleId   String?     @unique @map("google_id")
+  avatar     String?
+  createdAt  DateTime    @default(now()) @map("created_at")
   bookings   Booking[]
-  reviews    Review[]
   favourites Favourite[]
+  reviews    Review[]
 
   @@map("users")
 }
 
 model Salon {
-  id          Int        @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   name        String
   description String?
   address     String?
   area        String?
-  rating      Float      @default(0.0)
-  reviewCount Int        @default(0) @map("review_count")
+  rating      Float       @default(0.0)
+  reviewCount Int         @default(0) @map("review_count")
   image       String?
   images      String?
   latitude    Float?
   longitude   Float?
-  priceRange  String     @default("₹₹") @map("price_range")
+  priceRange  String      @default("₹₹") @map("price_range")
   phone       String?
-  openHours   String?    @map("open_hours")
+  openHours   String?     @map("open_hours")
   tags        String?
-  featured    Boolean    @default(false)
-  createdAt   DateTime   @default(now()) @map("created_at")
-
-  services   Service[]
-  bookings   Booking[]
-  reviews    Review[]
-  favourites Favourite[]
-  stylists   Stylist[]
+  featured    Boolean     @default(false)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  bookings    Booking[]
+  favourites  Favourite[]
+  reviews     Review[]
+  services    Service[]
+  stylists    Stylist[]
 
   @@map("salons")
 }
 
 model Service {
-  id       Int     @id @default(autoincrement())
-  salonId  Int     @map("salon_id")
+  id       Int       @id @default(autoincrement())
+  salonId  Int       @map("salon_id")
   name     String
   price    Float
-  duration Int?    // minutes
+  duration Int?
   category String?
-
-  salon    Salon     @relation(fields: [salonId], references: [id], onDelete: Cascade)
   bookings Booking[]
+  salon    Salon     @relation(fields: [salonId], references: [id], onDelete: Cascade)
 
   @@map("services")
 }
@@ -75,55 +72,51 @@ model Booking {
   time      String
   status    String   @default("confirmed")
   createdAt DateTime @default(now()) @map("created_at")
-
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  salon   Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
-  service Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  stylist Stylist? @relation(fields: [stylistId], references: [id], onDelete: SetNull)
+  salon     Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  service   Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  stylist   Stylist? @relation(fields: [stylistId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("bookings")
 }
 
 model Review {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @map("user_id")
-  salonId   Int      @map("salon_id")
-  rating    Int
-  comment   String?
-  userName  String   @map("user_name")
-  userAvatar String? @map("user_avatar")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  salon Salon @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  salonId    Int      @map("salon_id")
+  rating     Int
+  comment    String?
+  userName   String   @map("user_name")
+  userAvatar String?  @map("user_avatar")
+  createdAt  DateTime @default(now()) @map("created_at")
+  salon      Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("reviews")
 }
 
 model Favourite {
-  id      Int @id @default(autoincrement())
-  userId  Int @map("user_id")
-  salonId Int @map("salon_id")
-
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  salon Salon @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  id      Int   @id @default(autoincrement())
+  userId  Int   @map("user_id")
+  salonId Int   @map("salon_id")
+  salon   Salon @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, salonId])
   @@map("favourites")
 }
 
 model Stylist {
-  id             Int      @id @default(autoincrement())
-  salonId        Int      @map("salon_id")
+  id             Int       @id @default(autoincrement())
+  salonId        Int       @map("salon_id")
   name           String
   bio            String?
   avatar         String?
-  rating         Float    @default(5.0)
+  rating         Float     @default(5.0)
   specialization String?
-  createdAt      DateTime @default(now()) @map("created_at")
-
-  salon    Salon     @relation(fields: [salonId], references: [id], onDelete: Cascade)
-  bookings Booking[]
+  createdAt      DateTime  @default(now()) @map("created_at")
+  bookings       Booking[]
+  salon          Salon     @relation(fields: [salonId], references: [id], onDelete: Cascade)
 
   @@map("stylists")
 }
