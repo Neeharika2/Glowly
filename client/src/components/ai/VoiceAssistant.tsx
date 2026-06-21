@@ -166,25 +166,22 @@ export default function VoiceAssistant() {
 
   return (
     <>
-      {/* Floating Toggle Button */}
-      <button
-        onClick={() => {
-          setIsOpen(!isOpen);
-          if (isOpen) {
-            stopSpeaking();
-          }
-        }}
-        className={`fixed bottom-6 right-6 z-50 p-4 rounded-full text-white cursor-pointer shadow-lg transition-transform duration-300 hover:scale-110 flex items-center justify-center border border-white/20 animate-glow-pulse`}
-        style={{
-          background: 'linear-gradient(135deg, #1a0533 0%, #3d0d6b 50%, #6b1a4a 100%)',
-        }}
-      >
-        {isOpen ? <X className="w-6 h-6" /> : <Sparkles className="w-6 h-6" />}
-      </button>
+      {/* Floating Toggle Button — only visible when panel is closed */}
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-6 right-6 z-50 p-4 rounded-full text-white cursor-pointer shadow-lg transition-transform duration-300 hover:scale-110 flex items-center justify-center border border-white/20 animate-glow-pulse"
+          style={{
+            background: 'linear-gradient(135deg, #1a0533 0%, #3d0d6b 50%, #6b1a4a 100%)',
+          }}
+        >
+          <Sparkles className="w-6 h-6" />
+        </button>
+      )}
 
       {/* Slide-out Glass Panel */}
       {isOpen && (
-        <div className="fixed inset-y-0 right-0 w-full sm:w-[420px] bg-dark/70 backdrop-blur-xl border-l border-white/10 z-40 shadow-2xl flex flex-col text-white animate-fade-in">
+        <div className="fixed inset-0 sm:inset-y-0 sm:left-auto sm:right-0 sm:w-[420px] bg-dark/70 backdrop-blur-xl border-l border-white/10 z-[60] shadow-2xl flex flex-col text-white animate-fade-in">
           
           {/* Header */}
           <div className="p-5 border-b border-white/10 flex items-center justify-between"

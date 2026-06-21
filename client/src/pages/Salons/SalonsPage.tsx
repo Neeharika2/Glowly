@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useSearchParams, Link } from 'react-router-dom';
+import { useLocation, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Search, SlidersHorizontal, Star, MapPin, Heart, Sparkles } from 'lucide-react';
 import api from '../../lib/api';
+import { useAuth } from '../../context/AuthContext';
 import { Salon } from '../../types';
 
 const AREAS = ['All', 'Anna Nagar', 'T Nagar', 'Adyar', 'Nungambakkam', 'Velachery', 'OMR', 'Teynampet', 'Kodambakkam', 'Porur'];
@@ -13,18 +14,35 @@ const SORT_OPTIONS = [
   { value: 'price_desc', label: 'Price: High to Low' },
 ];
 
-function SalonCard({ salon }: { salon: Salon }) {
-  const [fav, setFav] = useState(false);
+function SalonCard({ salon, initialFav }: { salon: Salon; initialFav: boolean }) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [fav, setFav] = useState(initialFav);
+  const [loading, setLoading] = useState(false);
   const priceColor: Record<string, string> = { '₹': 'bg-green-100 text-green-700', '₹₹': 'bg-amber-100 text-amber-700', '₹₹₹': 'bg-rose-100 text-rose-700' };
+
+  const handleFavToggle = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!user) { navigate('/login'); return; }
+    setFav(!fav); // optimistic update
+    setLoading(true);
+    try {
+      await api.post('/favourites', { salonId: salon.id });
+    } catch {
+      setFav(fav); // revert on error
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="card overflow-hidden group flex flex-col">
       <div className="relative overflow-hidden h-48">
         <img src={salon.image || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&q=80'}
              alt={salon.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-        <button onClick={(e) => { e.preventDefault(); setFav(!fav); }}
-          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow hover:scale-110 transition-transform">
-          <Heart className={`w-4 h-4 ${fav ? 'fill-rose text-rose' : 'text-gray-400'}`} />
+        <button onClick={handleFavToggle} disabled={loading}
+          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow hover:scale-110 transition-transform disabled:opacity-60">
+          <Heart className={`w-4 h-4 transition-colors ${fav ? 'fill-rose-500 text-rose-500' : 'text-gray-400'}`} />
         </button>
         <div className="absolute top-3 left-3">
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${priceColor[salon.priceRange] || 'bg-gray-100 text-gray-600'}`}>
@@ -74,7 +92,9 @@ function SalonCard({ salon }: { salon: Salon }) {
 }
 
 export default function SalonsPage() {
+  const { user } = useAuth();
   const [salons, setSalons] = useState<Salon[]>([]);
+  const [favouriteIds, setFavouriteIds] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [area, setArea] = useState('All');
@@ -83,6 +103,17 @@ export default function SalonsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const location = useLocation();
   const [searchParams] = useSearchParams();
+
+  // Load user's favourite salon IDs once on mount (if logged in)
+  useEffect(() => {
+    if (!user) return;
+    api.get('/favourites/me')
+      .then(res => {
+        const ids = new Set<number>((res.data.favourites as Salon[]).map(s => s.id));
+        setFavouriteIds(ids);
+      })
+      .catch(() => {});
+  }, [user]);
 
   // Handle AI search results passed via router state
   const aiResults = (location.state as { aiResults?: Salon[]; query?: string })?.aiResults;
@@ -212,7 +243,7 @@ export default function SalonsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {salons.map((s) => <SalonCard key={s.id} salon={s} />)}
+            {salons.map((s) => <SalonCard key={s.id} salon={s} initialFav={favouriteIds.has(s.id)} />)}
           </div>
         )}
       </div>
