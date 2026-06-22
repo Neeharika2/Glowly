@@ -22,7 +22,8 @@ router.post('/register', async (req, res) => {
     const user = await prisma.user.create({
       data: { name, email, password: hashed },
     });
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: '7d' });
+    const jwtSecret = process.env.JWT_SECRET || 'super-secret-jwt-key-for-local-development';
+    const token = jwt.sign({ userId: user.id }, jwtSecret, { expiresIn: '7d' });
     res.cookie('token', token, { httpOnly: true, sameSite: 'lax', maxAge: 7 * 24 * 60 * 60 * 1000 });
     res.status(201).json({ user: { id: user.id, name: user.name, email: user.email, avatar: user.avatar }, token });
   } catch (err) {
@@ -45,7 +46,8 @@ router.post('/login', async (req, res) => {
       res.status(401).json({ error: 'Invalid credentials' });
       return;
     }
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: '7d' });
+    const jwtSecret = process.env.JWT_SECRET || 'super-secret-jwt-key-for-local-development';
+    const token = jwt.sign({ userId: user.id }, jwtSecret, { expiresIn: '7d' });
     res.cookie('token', token, { httpOnly: true, sameSite: 'lax', maxAge: 7 * 24 * 60 * 60 * 1000 });
     res.json({ user: { id: user.id, name: user.name, email: user.email, avatar: user.avatar }, token });
   } catch (err) {
@@ -65,7 +67,8 @@ router.get('/me', async (req, res) => {
   try {
     const token = req.cookies?.token || req.headers.authorization?.split(' ')[1];
     if (!token) { res.status(401).json({ error: 'Unauthorized' }); return; }
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: number };
+    const jwtSecret = process.env.JWT_SECRET || 'super-secret-jwt-key-for-local-development';
+    const decoded = jwt.verify(token, jwtSecret) as { userId: number };
     const user = await prisma.user.findUnique({ where: { id: decoded.userId }, select: { id: true, name: true, email: true, avatar: true, createdAt: true } });
     if (!user) { res.status(404).json({ error: 'User not found' }); return; }
     res.json({ user });

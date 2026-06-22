@@ -22,7 +22,8 @@ export const authenticate = (
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: number };
+    const jwtSecret = process.env.JWT_SECRET || 'super-secret-jwt-key-for-local-development';
+    const decoded = jwt.verify(token, jwtSecret) as { userId: number };
     req.userId = decoded.userId;
     next();
   } catch {
