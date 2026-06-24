@@ -1,4 +1,5 @@
 import HeroSection from '../../components/home/HeroSection';
+import BeautyQuote from '../../components/home/BeautyQuote';
 import PopularServices from '../../components/home/PopularServices';
 import FeaturedSalons from '../../components/home/FeaturedSalons';
 import AIConciergeCTA from '../../components/home/AIConciergeCTA';
@@ -9,9 +10,10 @@ export default function HomePage() {
   return (
     <>
       <HeroSection />
-      <AIBeautyTip />
+      <BeautyQuote />
       <PopularServices />
       <FeaturedSalons />
+      <AIBeautyTip />
       <AIConciergeCTA />
       <Testimonials />
     </>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useSearchParams, Link, useNavigate } from 'react-router-dom';
-import { Search, SlidersHorizontal, Star, MapPin, Heart, Sparkles } from 'lucide-react';
+import { Search, SlidersHorizontal, MapPin, Heart, Sparkles } from 'lucide-react';
 import api from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 import { Salon } from '../../types';
@@ -18,76 +18,69 @@ function SalonCard({ salon, initialFav }: { salon: Salon; initialFav: boolean })
   const { user } = useAuth();
   const navigate = useNavigate();
   const [fav, setFav] = useState(initialFav);
-  const [loading, setLoading] = useState(false);
-  const priceColor: Record<string, string> = { '₹': 'bg-green-100 text-green-700', '₹₹': 'bg-amber-100 text-amber-700', '₹₹₹': 'bg-rose-100 text-rose-700' };
+  const [favLoading, setFavLoading] = useState(false);
 
   const handleFavToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!user) { navigate('/login'); return; }
-    setFav(!fav); // optimistic update
-    setLoading(true);
+    setFav(!fav);
+    setFavLoading(true);
     try {
       await api.post('/favourites', { salonId: salon.id });
     } catch {
-      setFav(fav); // revert on error
+      setFav(fav);
     } finally {
-      setLoading(false);
+      setFavLoading(false);
     }
   };
 
   return (
-    <div className="card overflow-hidden group flex flex-col">
-      <div className="relative overflow-hidden h-48">
+    <Link to={`/salons/${salon.id}`} className="g-mirror group block">
+      <div className="relative overflow-hidden h-52">
         <img src={salon.image || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&q=80'}
-             alt={salon.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-        <button onClick={handleFavToggle} disabled={loading}
-          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow hover:scale-110 transition-transform disabled:opacity-60">
-          <Heart className={`w-4 h-4 transition-colors ${fav ? 'fill-rose-500 text-rose-500' : 'text-gray-400'}`} />
+             alt={salon.name}
+             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+        <button onClick={handleFavToggle} disabled={favLoading}
+          className="absolute top-3 right-3 w-8 h-8 bg-white flex items-center justify-center border border-dark/[0.06] hover:bg-blush transition-colors z-10">
+          <Heart className={`w-4 h-4 transition-colors ${fav ? 'fill-rose text-rose' : 'text-dark/30'}`} />
         </button>
-        <div className="absolute top-3 left-3">
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${priceColor[salon.priceRange] || 'bg-gray-100 text-gray-600'}`}>
-            {salon.priceRange}
-          </span>
-        </div>
+        <span className="absolute top-3 left-3 font-mono text-[10px] text-dark/50 bg-white px-2 py-1 border border-dark/[0.06]">
+          {salon.priceRange}
+        </span>
       </div>
-      <div className="p-5 flex flex-col flex-1">
-        <h3 className="font-semibold text-dark text-base mb-1">{salon.name}</h3>
-        <div className="flex items-center gap-1 mb-2">
-          <MapPin className="w-3 h-3 text-gray-400" />
-          <span className="text-xs text-gray-500">{salon.address || salon.area}</span>
+      <div className="p-5 space-y-2.5">
+        <div className="flex items-start justify-between">
+          <h3 className="font-display text-lg text-dark">{salon.name}</h3>
         </div>
-        <div className="flex items-center gap-2 mb-3">
-          <div className="flex items-center gap-1">
-            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-            <span className="text-sm font-semibold text-dark">{Number(salon.rating).toFixed(1)}</span>
-          </div>
-          <span className="text-xs text-gray-400">({salon.reviewCount} reviews)</span>
+        <div className="flex items-center gap-1">
+          <MapPin className="w-3 h-3 text-dark/30" />
+          <span className="text-xs text-dark/50">{salon.address || salon.area}</span>
         </div>
-        <div className="flex flex-wrap gap-1 mb-4">
-          {salon.services?.slice(0, 3).map((s) => (
-            <span key={s.name} className="text-[10px] px-2 py-0.5 rounded-full bg-pink-50 text-pink-600 border border-pink-100">
-              {s.name}
-            </span>
-          ))}
-          {(salon.services?.length || 0) > 3 && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
-              +{salon.services.length - 3}
-            </span>
-          )}
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-sm text-dark">{Number(salon.rating).toFixed(1)}</span>
+          <span className="text-xs text-dark/40">({salon.reviewCount} reviews)</span>
         </div>
-        <div className="flex gap-2 mt-auto">
-          <Link to={`/salons/${salon.id}`}
-            className="flex-1 text-center py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-dark hover:border-gold hover:text-gold transition-all">
-            View Details
-          </Link>
-          <Link to={`/book/${salon.id}`}
-            className="flex-1 text-center py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
-            style={{ background: 'linear-gradient(90deg, #C9A84C 0%, #E8A0A0 100%)' }}>
-            Book Now
+        {salon.services && salon.services.length > 0 && (
+          <>
+            <p className="text-[10px] text-dark/30 uppercase tracking-wider pt-1">Known for</p>
+            <div className="flex flex-wrap gap-1.5">
+              {salon.services.slice(0, 3).map((s) => (
+                <span key={s.name} className="gl-tag text-[10px]">{s.name}</span>
+              ))}
+              {salon.services.length > 3 && (
+                <span className="gl-tag text-[10px] text-dark/30">+{salon.services.length - 3}</span>
+              )}
+            </div>
+          </>
+        )}
+        <div className="pt-2 flex gap-2">
+          <Link to={`/book/${salon.id}`} onClick={(e) => e.stopPropagation()}
+            className="text-xs font-medium text-gold group-hover:opacity-100 opacity-60 transition-opacity">
+            Book now &rarr;
           </Link>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -104,7 +97,6 @@ export default function SalonsPage() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
 
-  // Load user's favourite salon IDs once on mount (if logged in)
   useEffect(() => {
     if (!user) return;
     api.get('/favourites/me')
@@ -115,7 +107,6 @@ export default function SalonsPage() {
       .catch(() => {});
   }, [user]);
 
-  // Handle AI search results passed via router state
   const aiResults = (location.state as { aiResults?: Salon[]; query?: string })?.aiResults;
 
   useEffect(() => {
@@ -158,56 +149,55 @@ export default function SalonsPage() {
   const handleSearch = (e: React.FormEvent) => { e.preventDefault(); fetchSalons(); };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100 sticky top-16 z-30">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+    <div className="min-h-screen bg-blush/30">
+      <div className="border-b border-dark/[0.06] bg-white sticky top-16 z-30">
+        <div className="gl-container py-4">
           <form onSubmit={handleSearch} className="flex gap-3 items-center">
-            <div className="flex-1 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus-within:ring-2 focus-within:ring-gold/40 focus-within:border-gold transition-all">
-              <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <div className="flex-1 flex items-center gap-2 border border-dark/15 px-4 py-2.5 focus-within:border-gold transition-colors bg-blush/30">
+              <Search className="w-4 h-4 text-dark/30 flex-shrink-0" />
               <input value={search} onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search salons, areas, services..."
-                className="flex-1 bg-transparent text-sm text-dark placeholder-gray-400 outline-none" />
+                className="flex-1 bg-transparent text-sm text-dark placeholder-dark/30 outline-none" />
             </div>
-            <button type="submit" className="btn-primary py-2.5 px-5 text-sm">
-              <Search className="w-4 h-4" /> Search
+            <button type="submit" className="gl-btn-primary py-2.5 px-5 text-xs">
+              <Search className="w-3.5 h-3.5" /> Search
             </button>
             <button type="button" onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium hover:border-gold hover:text-gold transition-all">
-              <SlidersHorizontal className="w-4 h-4" /> Filters
+              className="gl-btn py-2.5 px-4 text-xs">
+              <SlidersHorizontal className="w-3.5 h-3.5" /> Filters
             </button>
           </form>
 
           {showFilters && (
-            <div className="mt-3 flex flex-wrap gap-3 pt-3 border-t border-gray-100">
-              {/* Area */}
+            <div className="mt-3 flex flex-wrap gap-3 pt-3 border-t border-dark/[0.06]">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500 font-medium">Area:</span>
+                <span className="text-xs text-dark/40 font-medium">Area:</span>
                 <div className="flex gap-1 flex-wrap">
                   {AREAS.map((a) => (
                     <button key={a} onClick={() => setArea(a)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${area === a ? 'bg-plum-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                      style={area === a ? { background: '#1a0533' } : {}}>
+                      className={`px-3 py-1 text-xs font-medium transition-colors border ${
+                        area === a ? 'bg-dark text-white border-dark' : 'text-dark/50 border-dark/10 hover:border-dark/30'
+                      }`}>
                       {a}
                     </button>
                   ))}
                 </div>
               </div>
-              {/* Price */}
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500 font-medium">Price:</span>
+                <span className="text-xs text-dark/40 font-medium">Price:</span>
                 {PRICE_RANGES.map((p) => (
                   <button key={p} onClick={() => setPriceRange(p)}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${priceRange === p ? 'bg-gold text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                    className={`px-3 py-1 text-xs font-medium transition-colors border ${
+                      priceRange === p ? 'bg-dark text-white border-dark' : 'text-dark/50 border-dark/10 hover:border-dark/30'
+                    }`}>
                     {p}
                   </button>
                 ))}
               </div>
-              {/* Sort */}
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500 font-medium">Sort:</span>
+                <span className="text-xs text-dark/40 font-medium">Sort:</span>
                 <select value={sort} onChange={(e) => setSort(e.target.value)}
-                  className="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-gold">
+                  className="text-xs border border-dark/10 px-2 py-1 outline-none focus:border-gold bg-white">
                   {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </div>
@@ -216,17 +206,16 @@ export default function SalonsPage() {
         </div>
       </div>
 
-      {/* Grid */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="gl-container py-8">
         {aiResults && (
-          <div className="flex items-center gap-2 mb-6 p-3 rounded-xl bg-ai-card border border-pink-100">
+          <div className="flex items-center gap-2 mb-6 p-3 border border-gold/20 bg-gold/[0.03]">
             <Sparkles className="w-4 h-4 text-gold" />
-            <span className="text-sm text-dark/70">AI-powered results for your query</span>
+            <span className="text-sm text-dark/60">AI-powered results for your query</span>
           </div>
         )}
 
         <div className="flex items-center justify-between mb-6">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-dark/40">
             {loading ? 'Loading...' : `${salons.length} salons found`}
           </p>
         </div>
@@ -234,12 +223,12 @@ export default function SalonsPage() {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="rounded-2xl bg-gray-200 h-80 animate-pulse" />
+              <div key={i} className="h-80 bg-dark/[0.03] animate-pulse" />
             ))}
           </div>
         ) : salons.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-gray-400 text-lg">No salons found. Try adjusting your filters.</p>
+            <p className="text-dark/40 text-lg">No salons found. Try adjusting your filters.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

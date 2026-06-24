@@ -1,10 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
-
 @import "tailwindcss";
 @config "../tailwind.config.js";
+
 @layer base {
-  * { box-sizing: border-box; }
-  
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
   html {
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
@@ -12,112 +13,148 @@
   }
 
   body {
-    @apply font-sans text-dark bg-white;
-    line-height: 1.6;
+    @apply bg-white text-dark font-body antialiased;
   }
 
-  h1, h2, h3 { @apply font-display; }
+  ::selection {
+    @apply bg-gold/15 text-dark;
+  }
 
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { @apply bg-gray-100; }
-  ::-webkit-scrollbar-thumb { @apply bg-rose rounded-full; }
-  ::-webkit-scrollbar-thumb:hover { @apply bg-gold; }
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-dark/10 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-dark/20;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-gold/60;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
 
 @layer components {
+  .gl-section {
+    @apply py-20 md:py-28;
+  }
+
+  .gl-container {
+    @apply max-w-7xl mx-auto px-6 md:px-10;
+  }
+
+  .gl-container-narrow {
+    @apply max-w-5xl mx-auto px-6 md:px-10;
+  }
+
+  .gl-btn {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
+           text-sm font-medium text-dark border border-dark/15
+           transition-all duration-300;
+  }
+
+  .gl-btn:hover {
+    @apply border-gold text-gold;
+  }
+
+  .gl-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
+           text-sm font-medium text-white bg-dark
+           transition-all duration-300;
+  }
+
+  .gl-btn-primary:hover {
+    @apply bg-gold;
+  }
+
+  .gl-card {
+    @apply bg-white border border-dark/[0.06] transition-all duration-300;
+  }
+
+  .gl-card:hover {
+    @apply border-dark/[0.12];
+  }
+
+  .gl-input {
+    @apply w-full px-4 py-3 bg-transparent border border-dark/15 text-dark
+           placeholder:text-dark/30 outline-none transition-all duration-200;
+  }
+
+  .gl-input:focus {
+    @apply border-gold;
+  }
+
+  .gl-tag {
+    @apply inline-flex items-center px-3 py-1 text-xs font-medium
+           border border-dark/10;
+  }
+
+  .gl-rule {
+    @apply w-full h-px bg-dark/[0.06];
+  }
+
+  .g-mirror {
+    border: 1px solid rgba(10, 10, 10, 0.08);
+    position: relative;
+  }
+  .g-mirror::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border: 1px solid rgba(10, 10, 10, 0.04);
+    pointer-events: none;
+  }
+
+  /* Backward compat — old classes remapped to new design system */
   .btn-primary {
-    @apply inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-white
-           bg-gold-rose transition-all duration-300 hover:shadow-gold hover:scale-105 active:scale-95;
-    background: linear-gradient(90deg, #C9A84C 0%, #E8A0A0 100%);
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-dark transition-all duration-300;
   }
-
+  .btn-primary:hover {
+    @apply bg-gold;
+  }
   .btn-outline {
-    @apply inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-dark
-           border-2 border-dark/20 bg-white transition-all duration-300
-           hover:border-gold hover:text-gold hover:shadow-gold;
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-dark border border-dark/15 transition-all duration-300;
   }
-
-  .btn-ghost {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-full font-medium
-           text-dark/70 transition-all duration-200 hover:bg-gray-100 hover:text-dark;
+  .btn-outline:hover {
+    @apply border-gold text-gold;
   }
-
   .card {
-    @apply bg-white rounded-2xl shadow-card border border-gray-100
-           transition-all duration-300 hover:shadow-card-hover hover:-translate-y-1;
+    @apply bg-white border border-dark/[0.06] p-6;
   }
-
   .badge {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+    @apply inline-flex items-center px-3 py-1 text-xs font-medium border border-dark/10;
   }
-
-  .badge-gold { @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200; }
-  .badge-rose { @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-pink-50 text-pink-700 border border-pink-200; }
-  .badge-green { @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200; }
-
-  .input {
-    @apply w-full px-4 py-3 rounded-xl border border-gray-200 bg-white
-           text-dark placeholder-gray-400 transition-all duration-200
-           focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold;
+  .badge-gold {
+    @apply inline-flex items-center px-3 py-1 text-xs font-medium border border-gold/20 bg-gold/5 text-gold;
   }
-
+  .badge-rose {
+    @apply inline-flex items-center px-3 py-1 text-xs font-medium border border-rose/20 bg-rose/5 text-rose;
+  }
+  .badge-green {
+    @apply inline-flex items-center px-3 py-1 text-xs font-medium border border-emerald/20 bg-emerald/5 text-emerald;
+  }
   .section-title {
-    @apply font-display text-3xl md:text-4xl font-bold text-dark;
+    @apply font-display text-3xl md:text-4xl leading-tight;
   }
-
   .section-subtitle {
-    @apply text-gray-500 text-lg mt-3 max-w-xl;
+    @apply text-dark/50 text-base mt-2;
   }
-
   .gradient-text {
-    background: linear-gradient(90deg, #C9A84C 0%, #E8A0A0 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: theme('colors.gold');
   }
-
   .glass {
-    @apply bg-white/10 backdrop-blur-md border border-white/20;
+    @apply bg-white/80 backdrop-blur-md;
   }
-
-  .price-badge {
-    @apply text-xs font-semibold px-2 py-0.5 rounded-full;
-  }
-  .price-1 { @apply text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700; }
-  .price-2 { @apply text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700; }
-  .price-3 { @apply text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700; }
-}
-
-@layer utilities {
-  .animate-fade-in { animation: fadeIn 0.6s ease-out both; }
-  .animate-slide-up { animation: slideUp 0.5s ease-out both; }
-  .animate-float { animation: float 6s ease-in-out infinite; }
-  .animate-glow-pulse { animation: glowPulse 2s ease-in-out infinite; }
-  .animate-soundwave { animation: soundwave 1.2s ease-in-out infinite alternate; }
-
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  @keyframes slideUp {
-    from { opacity: 0; transform: translateY(24px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-12px); }
-  }
-  @keyframes glowPulse {
-    0%, 100% { box-shadow: 0 0 15px rgba(201, 168, 76, 0.4), 0 0 30px rgba(232, 160, 160, 0.2); }
-    50% { box-shadow: 0 0 25px rgba(201, 168, 76, 0.8), 0 0 50px rgba(232, 160, 160, 0.5); }
-  }
-  @keyframes soundwave {
-    0% { height: 4px; }
-    100% { height: 28px; }
-  }
-
-  .delay-100 { animation-delay: 100ms; }
-  .delay-200 { animation-delay: 200ms; }
-  .delay-300 { animation-delay: 300ms; }
-  .delay-400 { animation-delay: 400ms; }
 }

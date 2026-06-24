@@ -174,6 +174,72 @@ Based on this profile, return the top 3 matching salons as a JSON array of objec
   }
 });
 
+// Fallback review summary generator when Gemini API quota is exceeded or fails
+function generateFallbackSummary(reviews: any[]) {
+  const validRatings = reviews.map(r => r.rating).filter(Boolean);
+  const score = validRatings.length > 0 
+    ? validRatings.reduce((sum, r) => sum + r, 0) / validRatings.length 
+    : 4.0;
+  
+  const pros: string[] = [];
+  const cons: string[] = [];
+  
+  const allCommentsText = reviews
+    .map(r => r.comment || '')
+    .join(' ')
+    .toLowerCase();
+  
+  const checkKeywords = (keywords: string[]) => {
+    return keywords.some(k => allCommentsText.includes(k));
+  };
+  
+  // Pros extraction
+  if (checkKeywords(['hair', 'cut', 'style', 'stylist'])) pros.push('Skilled stylists and professional hair care');
+  if (checkKeywords(['makeup', 'bridal', 'wedding', 'bride'])) pros.push('Exceptional makeup artistry and bridal services');
+  if (checkKeywords(['clean', 'hygiene', 'neat', 'spotless'])) pros.push('Highly clean, hygienic, and safe environment');
+  if (checkKeywords(['friendly', 'staff', 'warm', 'hospitable', 'polite'])) pros.push('Courteous, welcoming, and supportive staff');
+  if (checkKeywords(['value', 'reasonable', 'affordable', 'worth'])) pros.push('Excellent value for services offered');
+  if (checkKeywords(['ambience', 'atmosphere', 'vibe', 'decor'])) pros.push('Premium, relaxing, and aesthetic ambience');
+  
+  // Cons extraction
+  if (checkKeywords(['wait', 'delay', 'time', 'queue'])) cons.push('Slight waiting times during peak hours');
+  if (checkKeywords(['expensive', 'pricey', 'cost'])) cons.push('Premium pricing for select treatments');
+  if (checkKeywords(['parking', 'car', 'vehicle'])) cons.push('Limited parking slots available nearby');
+  if (checkKeywords(['busy', 'crowd', 'crowded'])) cons.push('Can get busy on weekends, booking advised');
+
+  // Fallbacks if lists are empty
+  if (pros.length === 0) {
+    if (score >= 4.0) {
+      pros.push('High-quality personalized beauty treatments');
+      pros.push('Experienced and attentive staff');
+    } else {
+      pros.push('Convenient location and prompt service');
+    }
+  }
+  
+  if (cons.length === 0) {
+    if (score < 4.0) {
+      cons.push('Consistency in service could be improved');
+      cons.push('Longer waiting times reported');
+    } else {
+      cons.push('Prior appointment booking is highly recommended');
+    }
+  }
+  
+  let sentiment = 'Neutral';
+  if (score >= 4.5) sentiment = 'Exceptional';
+  else if (score >= 4.0) sentiment = 'Very Positive';
+  else if (score >= 3.0) sentiment = 'Positive';
+  else sentiment = 'Mixed';
+  
+  return {
+    pros: pros.slice(0, 3),
+    cons: cons.slice(0, 2),
+    sentiment,
+    score: Math.round(score * 10) / 10
+  };
+}
+
 // ─────────────────────────────────────────────────────────
 // POST /api/ai/review-summary — Review Summarizer
 // ─────────────────────────────────────────────────────────
@@ -199,31 +265,38 @@ ${reviewText}
 
 Please outline the main positive points, negative points, overall sentiment, and numerical score out of 5 based on customer comments.`;
 
-    const result = await gemini.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: SchemaType.OBJECT,
-          properties: {
-            pros: {
-              type: SchemaType.ARRAY,
-              items: { type: SchemaType.STRING }
+    let summary;
+    try {
+      const result = await gemini.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: SchemaType.OBJECT,
+            properties: {
+              pros: {
+                type: SchemaType.ARRAY,
+                items: { type: SchemaType.STRING }
+              },
+              cons: {
+                type: SchemaType.ARRAY,
+                items: { type: SchemaType.STRING }
+              },
+              sentiment: { type: SchemaType.STRING },
+              score: { type: SchemaType.NUMBER }
             },
-            cons: {
-              type: SchemaType.ARRAY,
-              items: { type: SchemaType.STRING }
-            },
-            sentiment: { type: SchemaType.STRING },
-            score: { type: SchemaType.NUMBER }
-          },
-          required: ['pros', 'cons', 'sentiment', 'score']
+            required: ['pros', 'cons', 'sentiment', 'score']
+          }
         }
-      }
-    });
+      });
 
-    const text = result.response.text();
-    const summary = JSON.parse(text);
+      const text = result.response.text();
+      summary = JSON.parse(text);
+    } catch (aiErr) {
+      console.warn('AI review summary failed, using local fallback summary generator:', aiErr);
+      summary = generateFallbackSummary(reviews);
+    }
+
     res.json(summary);
   } catch (err) {
     handleAIError(err, 'Review summary', res);

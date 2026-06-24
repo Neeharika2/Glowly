@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Sparkles } from 'lucide-react';
 import api from '../../lib/api';
 
 export default function AIBeautyTip() {
@@ -21,20 +20,20 @@ export default function AIBeautyTip() {
         localStorage.setItem('beauty_tip', r.data.tip);
         localStorage.setItem('beauty_tip_date', today);
       })
-      .catch(() => setTip('Apply a light SPF moisturiser before stepping out — Chennai\'s sun can be harsh on skin!'))
+      .catch(() => setTip("Apply a light SPF moisturiser before stepping out — Chennai's sun can be harsh on skin!"))
       .finally(() => setLoading(false));
   }, []);
 
   return (
-    <section className="py-12 px-4" style={{ background: 'linear-gradient(135deg, #f5e6ff 0%, #ffe6f0 100%)' }}>
-      <div className="max-w-3xl mx-auto text-center">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/60 border border-pink-200 text-pink-700 text-xs font-medium mb-4">
-          <Sparkles className="w-3 h-3" /> Today's AI Beauty Tip
-        </div>
+    <section className="py-12 border-y border-dark/[0.06]">
+      <div className="gl-container-narrow text-center">
+        <p className="text-xs font-medium text-gold uppercase tracking-widest mb-3">
+          Today's Tip
+        </p>
         {loading ? (
-          <div className="h-6 bg-white/50 rounded-full animate-pulse w-3/4 mx-auto" />
+          <div className="h-5 bg-dark/5 animate-pulse w-3/4 mx-auto" />
         ) : (
-          <p className="text-dark/80 text-lg font-medium leading-relaxed">{tip}</p>
+          <p className="text-sm text-dark/60 leading-relaxed max-w-lg mx-auto">{tip}</p>
         )}
       </div>
     </section>

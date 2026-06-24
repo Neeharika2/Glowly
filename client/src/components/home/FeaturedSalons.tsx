@@ -1,39 +1,45 @@
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, MapPin, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../../lib/api';
 import { Salon } from '../../types';
 
 function SalonCard({ salon }: { salon: Salon }) {
-  const priceClass: Record<string, string> = { '₹': 'price-1', '₹₹': 'price-2', '₹₹₹': 'price-3' };
   return (
     <Link to={`/salons/${salon.id}`}
-      className="flex-shrink-0 w-72 card overflow-hidden group cursor-pointer">
-      <div className="relative overflow-hidden h-44">
+      className="flex-shrink-0 w-72 g-mirror group">
+      <div className="overflow-hidden h-52">
         <img src={salon.image || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&q=80'}
-             alt={salon.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-        <div className="absolute top-3 right-3">
-          <span className={priceClass[salon.priceRange] || 'price-2'}>{salon.priceRange}</span>
-        </div>
+             alt={salon.name}
+             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
       </div>
-      <div className="p-4">
-        <h3 className="font-semibold text-dark text-sm truncate">{salon.name}</h3>
-        <div className="flex items-center gap-1 mt-1">
-          <MapPin className="w-3 h-3 text-gray-400" />
-          <span className="text-xs text-gray-500">{salon.area}</span>
+      <div className="p-5 space-y-2.5">
+        <div className="flex items-start justify-between">
+          <h3 className="font-display text-lg text-dark">{salon.name}</h3>
+          <span className="font-mono text-[10px] text-dark/40">{salon.priceRange}</span>
         </div>
-        <div className="flex items-center gap-1 mt-2">
-          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-          <span className="text-sm font-medium text-dark">{Number(salon.rating).toFixed(1)}</span>
-          <span className="text-xs text-gray-400">({salon.reviewCount} reviews)</span>
+        <p className="text-xs text-dark/50">{salon.area}</p>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-sm text-dark">{Number(salon.rating).toFixed(1)}</span>
+          <span className="text-xs text-dark/40">({salon.reviewCount})</span>
         </div>
-        <div className="flex flex-wrap gap-1 mt-3">
-          {salon.services?.slice(0, 2).map((s) => (
-            <span key={s.name} className="badge badge-rose text-[10px]">{s.name}</span>
-          ))}
-          {(salon.services?.length || 0) > 2 && (
-            <span className="badge bg-gray-100 text-gray-500 text-[10px]">+{salon.services.length - 2}</span>
-          )}
+        {salon.services && salon.services.length > 0 && (
+          <>
+            <p className="text-[10px] text-dark/30 uppercase tracking-wider pt-1">Known for</p>
+            <div className="flex flex-wrap gap-1.5">
+              {salon.services.slice(0, 3).map((s) => (
+                <span key={s.name} className="gl-tag text-[10px]">{s.name}</span>
+              ))}
+              {salon.services.length > 3 && (
+                <span className="gl-tag text-[10px] text-dark/30">+{salon.services.length - 3}</span>
+              )}
+            </div>
+          </>
+        )}
+        <div className="pt-1">
+          <span className="text-xs font-medium text-gold group-hover:opacity-100 opacity-60 transition-opacity">
+            Book now &rarr;
+          </span>
         </div>
       </div>
     </Link>
@@ -54,24 +60,24 @@ export default function FeaturedSalons() {
   };
 
   return (
-    <section className="py-20 px-4 bg-white">
-      <div className="max-w-7xl mx-auto">
+    <section className="gl-section bg-blush">
+      <div className="gl-container">
         <div className="flex items-end justify-between mb-10">
           <div>
-            <h2 className="section-title">Featured Salons</h2>
-            <p className="section-subtitle">Top-rated picks across Chennai</p>
+            <p className="font-display text-3xl md:text-4xl">Featured Salons</p>
+            <p className="text-dark/50 text-sm mt-2">Top-rated picks across Chennai</p>
           </div>
           <div className="flex items-center gap-3">
             <button onClick={() => scroll('left')}
-              className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:border-gold hover:text-gold transition-all">
-              <ChevronLeft className="w-5 h-5" />
+              className="w-8 h-8 border border-dark/10 flex items-center justify-center hover:border-gold hover:text-gold transition-all duration-200">
+              <ChevronLeft className="w-4 h-4" />
             </button>
             <button onClick={() => scroll('right')}
-              className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:border-gold hover:text-gold transition-all">
-              <ChevronRight className="w-5 h-5" />
+              className="w-8 h-8 border border-dark/10 flex items-center justify-center hover:border-gold hover:text-gold transition-all duration-200">
+              <ChevronRight className="w-4 h-4" />
             </button>
-            <Link to="/salons" className="flex items-center gap-1 text-sm font-medium text-gold hover:underline">
-              View all <ArrowRight className="w-4 h-4" />
+            <Link to="/salons" className="text-sm font-medium text-dark/50 hover:text-gold transition-colors ml-2">
+              View all &rarr;
             </Link>
           </div>
         </div>
@@ -79,11 +85,11 @@ export default function FeaturedSalons() {
         {loading ? (
           <div className="flex gap-5 overflow-hidden">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="flex-shrink-0 w-72 rounded-2xl bg-gray-100 h-64 animate-pulse" />
+              <div key={i} className="flex-shrink-0 w-72 h-80 bg-dark/[0.03] animate-pulse" />
             ))}
           </div>
         ) : (
-          <div ref={scrollRef} className="flex gap-5 overflow-x-auto pb-3 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
+          <div ref={scrollRef} className="flex gap-5 overflow-x-auto pb-3" style={{ scrollbarWidth: 'none' }}>
             {salons.map((s) => <SalonCard key={s.id} salon={s} />)}
           </div>
         )}

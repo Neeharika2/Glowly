@@ -1,44 +1,39 @@
-import { Scissors, Sparkles, Flower2, Hand, Footprints, Brush, Zap, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const services = [
-  { icon: Scissors, name: 'Haircut & Style', count: '42 salons', color: '#C9A84C' },
-  { icon: Sparkles, name: 'Bridal Makeup', count: '28 salons', color: '#E8A0A0' },
-  { icon: Zap, name: 'Hair Spa', count: '36 salons', color: '#9b59b6' },
-  { icon: Flower2, name: 'Facial & Skin', count: '33 salons', color: '#27ae60' },
-  { icon: Hand, name: 'Manicure', count: '29 salons', color: '#e74c3c' },
-  { icon: Footprints, name: 'Pedicure', count: '27 salons', color: '#3498db' },
-  { icon: Brush, name: 'Keratin', count: '19 salons', color: '#f39c12' },
-  { icon: Heart, name: 'Waxing', count: '38 salons', color: '#e91e63' },
+  { name: 'Hair', description: 'Precision cuts, color & styling', count: 42, startingPrice: 300 },
+  { name: 'Bridal', description: 'Complete packages for your special day', count: 28, startingPrice: 5000 },
+  { name: 'Hair Spa', description: 'Deep conditioning & scalp treatments', count: 36, startingPrice: 800 },
+  { name: 'Skin', description: 'Facials, peels & rejuvenation', count: 33, startingPrice: 600 },
+  { name: 'Nails', description: 'Manicure, pedicure & nail art', count: 29, startingPrice: 350 },
+  { name: 'Makeup', description: 'Professional makeup for every occasion', count: 27, startingPrice: 1500 },
+  { name: 'Body', description: 'Waxing, threading & grooming', count: 38, startingPrice: 200 },
+  { name: 'Spa', description: 'Relaxing massages & body treatments', count: 20, startingPrice: 1200 },
 ];
 
 export default function PopularServices() {
   const navigate = useNavigate();
 
   return (
-    <section className="py-20 px-4" style={{ background: 'linear-gradient(180deg, #faf5ff 0%, #fff5f8 100%)' }}>
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="section-title">Popular Services</h2>
-          <p className="section-subtitle mx-auto">
-            Everything you need — from everyday cuts to luxury bridal packages
-          </p>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {services.map(({ icon: Icon, name, count, color }) => (
+    <section className="gl-section">
+      <div className="gl-container">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-px bg-dark/[0.06]">
+          {services.map(({ name, description, count, startingPrice }) => (
             <button
               key={name}
               onClick={() => navigate(`/salons?service=${encodeURIComponent(name)}`)}
-              className="group flex flex-col items-center gap-3 p-6 bg-white rounded-2xl shadow-card border border-gray-100 hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300"
+              className="bg-white p-7 md:p-8 text-left group hover:bg-blush transition-colors duration-200"
             >
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110"
-                   style={{ backgroundColor: `${color}15` }}>
-                <Icon className="w-7 h-7" style={{ color }} />
+              <p className="font-mono text-xs text-gold/60 mb-4 tracking-widest uppercase">{name}</p>
+              <p className="font-display text-lg text-dark mb-2 leading-snug">{description}</p>
+              <div className="flex items-center gap-3 text-xs text-dark/40 mb-5">
+                <span>{count} salons</span>
+                <span className="w-px h-3 bg-dark/10" />
+                <span>from ₹{startingPrice}</span>
               </div>
-              <div className="text-center">
-                <p className="font-semibold text-dark text-sm">{name}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{count}</p>
-              </div>
+              <span className="text-xs text-gold group-hover:opacity-100 opacity-0 transition-opacity duration-200">
+                Browse &rarr;
+              </span>
             </button>
           ))}
         </div>

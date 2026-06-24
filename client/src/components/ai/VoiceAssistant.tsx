@@ -191,7 +191,7 @@ export default function VoiceAssistant() {
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="font-display font-bold text-lg tracking-wide gradient-text bg-gold-rose">Glow Assistant</h3>
+                <h3 className="font-display font-bold text-lg tracking-wide bg-gold-rose bg-clip-text text-transparent">Glow Assistant</h3>
                 <span className="text-[10px] text-gray-400 flex items-center gap-1.5">
                   <span className={`w-2 h-2 rounded-full inline-block ${isListening ? 'bg-red-500 animate-pulse' : isSpeaking ? 'bg-amber-400 animate-ping' : 'bg-green-500'}`} />
                   {isListening ? 'Listening...' : isSpeaking ? 'Speaking...' : 'Online'}

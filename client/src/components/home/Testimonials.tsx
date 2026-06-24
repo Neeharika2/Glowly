@@ -1,62 +1,61 @@
-import { Star, Quote } from 'lucide-react';
+import { useState } from 'react';
+import { Quote } from 'lucide-react';
 
 const testimonials = [
   {
     name: 'Priya Krishnamurthy',
     role: 'Bride · T Nagar',
-    avatar: 'P',
-    rating: 5,
-    text: 'Glow AI found me the perfect bridal salon within seconds! I described exactly what I wanted and it matched me to Lakme T Nagar. The makeup was stunning. Highly recommend!',
-    color: '#C9A84C',
+    text: 'Glow found me the perfect bridal salon within seconds. I described exactly what I wanted and it matched me to Lakme T Nagar. The makeup was stunning.',
+    image: 'https://images.unsplash.com/photo-1524508762098-fd966ffb6ef9?w=400&q=85',
   },
   {
     name: 'Ranjith Subramanian',
     role: 'Professional · OMR',
-    avatar: 'R',
-    rating: 5,
-    text: "The AI concierge is genuinely impressive. I asked for men's grooming salons in OMR and got exactly the right recommendations with prices. Booked in under 2 minutes.",
-    color: '#E8A0A0',
+    text: "I asked for men's grooming salons in OMR and got exactly the right recommendations with prices. Booked in under 2 minutes.",
+    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=85',
   },
   {
     name: 'Kavitha Ramasamy',
     role: 'Student · Anna Nagar',
-    avatar: 'K',
-    rating: 5,
-    text: 'Used the AI Match quiz for a party makeover. It suggested Green Trends in Anna Nagar with a 94% match score — and it was perfect! Love this app.',
-    color: '#9b59b6',
+    text: 'Used the AI Match quiz for a party makeover. It suggested Green Trends with a 94% match score — and it was perfect.',
+    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=85',
   },
 ];
 
 export default function Testimonials() {
+  const [current, setCurrent] = useState(0);
+  const t = testimonials[current];
+
   return (
-    <section className="py-20 px-4 bg-white">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="section-title">What Chennai Says</h2>
-          <p className="section-subtitle mx-auto">Real users, real results — powered by AI</p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-6">
-          {testimonials.map((t) => (
-            <div key={t.name} className="card p-6 relative">
-              <Quote className="w-8 h-8 text-gray-100 absolute top-5 right-5" />
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-lg"
-                     style={{ background: t.color }}>
-                  {t.avatar}
-                </div>
-                <div>
-                  <p className="font-semibold text-dark text-sm">{t.name}</p>
-                  <p className="text-xs text-gray-400">{t.role}</p>
-                </div>
-              </div>
-              <div className="flex gap-0.5 mb-3">
-                {[...Array(t.rating)].map((_, i) => (
-                  <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-              <p className="text-gray-600 text-sm leading-relaxed">{t.text}</p>
+    <section className="gl-section">
+      <div className="gl-container-narrow">
+        <div className="g-mirror p-8 md:p-10">
+          <div className="grid md:grid-cols-5 gap-8 md:gap-10 items-center">
+            <div className="md:col-span-3">
+              <Quote className="w-6 h-6 text-clay/40 mb-4" />
+              <blockquote className="font-display text-xl md:text-2xl leading-relaxed text-dark mb-6">
+                &ldquo;{t.text}&rdquo;
+              </blockquote>
+              <p className="font-medium text-dark text-sm">{t.name}</p>
+              <p className="text-xs text-dark/40 mt-1">{t.role}</p>
             </div>
-          ))}
+            <div className="hidden md:block md:col-span-2">
+              <div className="aspect-[3/4] overflow-hidden">
+                <img src={t.image} alt={t.name} className="w-full h-full object-cover" />
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center justify-center gap-2 mt-8">
+            {testimonials.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrent(i)}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  i === current ? 'bg-gold w-6' : 'bg-dark/15 w-2'
+                }`}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </section>
